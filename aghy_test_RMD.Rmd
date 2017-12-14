@@ -1,0 +1,135 @@
+---
+title: "Status Update on *Agrostis hyemalis* Analysis"
+author: "Marion Donald"
+date: "December 13, 2017"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+source("C:/Users/Marion Donald/Dropbox/Rice/Projects/AGHY/AGHY_SFAEF_Project/AGHY analysis summer2017/AGHY_figures_RMarkdown_Script.R")
+```
+
+## Introduction
+* Variable endosymbiont prevalences are commonly observed in nature
+* We used a life-cycle "decomposition" to determine where and how the symbiont prevalence is controlled via its influence on host demography and imperfect vertical transmission 
+* Previous work suggests that symbiont benefits to the host and therefore are influenced by environmental context. For this reason, we used an environmental manipulation to determine under what context symbiont prevalence is affected by environmental context. 
+
+## *Agrostis hyemalis* Vital Rates Figures 
+
+
+### Survival 
+Survival probability estimates for recruits that germinated in 2014 and survived until 2015 (2015 survival) and recruits that germinated in 2015 and survived until 2016 (2016 survival). Colors represent ambient rainfall and irrigated environmental contexts.
+
+```{r survival, fig.height = 3.75, fig.width = 7.75, .echo=FALSE}
+s.all.plot
+```
+
+### Flowering 
+Flowering probability estimates for recruits that in 2014, 2015, and 2016. Colors represent ambient rainfall and irrigated environmental contexts.
+
+```{r flowering, fig.height = 3.75, fig.width = 7.75, .echo=FALSE}
+f.all.plot
+```
+
+### Seed Production 
+* Having trouble estimatings seed production in the Bayesian model -- issue is arising when it comes time to index over the water treatment. 
+```{r seed production, echo = TRUE}
+#####################################################################
+########## NEW: Seed Production July 16, 2017 #######################
+#####################################################################
+
+###################################################################################
+## Having trouble getting the estimates to work for the water treatment indexing ##
+###################################################################################
+## First start with change from seed mass to seed counts
+
+## priors for regression paramaters endo specific and indexed over water treatments 
+#for (i in 1:N.trt){
+#    intercept.ep[i] ~ dnorm(0, 0.001)
+#    slope.ep[i] ~ dunif(0, 1000) ## don't want a negative slope, using the 
+##                                  uniform distribution to have the min be 0  
+#    
+#  intercept.em[i] ~ dnorm(0, 0.001)
+#   slope.em[i] ~ dunif(0, 1000) ## don't want a negative slope, using the 
+#                                   uniform distribution to have the min be 0  
+#    
+#}
+#
+### sigma and tau for seed counts
+#  #sigma.count ~ dunif(0, 1000)
+#tau.sigma.count ~ dgamma(0.001, 0.001)
+
+
+
+### Likelihood model for number of seeds and seed mass
+#for (i in 1:N.Ep.seed.count){
+#mean.seed.count.Ep[i] <- intercept.ep[water.seed.count.Ep[i]] + 
+#                       slope.ep[water.seed.count.Ep[i]]*seed.mass.Ep[i]
+#Ep.seed.count[i] ~ dnorm(mean.seed.count.Ep[i], tau.sigma.count)
+
+#}
+
+#for (i in 1:N.Em.seed.count){
+#mean.seed.count.Em[i]<- intercept.em[water.seed.count.Em[i]] + 
+#                     (slope.em[water.seed.count.Em[i]])*seed.mass.Em[i]
+#Em.seed.count[i] ~ dnorm(mean.seed.count.Em[i], tau.sigma.count)
+
+#}
+
+
+## Seed production for the original plants in 2013 (these seeds were produced 
+##  by original plants in 2013 and will contribute to the recruits in 2014)
+
+### Priors for seed production - specific for endo, indexed for water treatment
+#  for(i in 1:N.trt){
+#  Ep_beta0_seed.13[i] ~ dnorm(0, 0.001)
+#  Em_beta0_seed.13[i] ~ dnorm(0, 0.001)
+#  }
+
+
+## Tau.sigma for prob seed production plot (this tau is different than the tau 
+## that will go in the gaussian model)
+#  sigma.seed ~ dunif(0, 1000)
+#  tau.sigma.seed <- 1/(sigma.seed * sigma.seed)
+
+## Tau.sigma for the model
+#  sigma.s ~ dunif(0,1000)
+#  tau.sigma.s <- 1/(sigma.s * sigma.s)
+
+## Random effect of plot for seed production
+#  for(i in 1:N.plots){
+#  ran.seed.13[i] ~ dnorm(0, tau.sigma.seed)
+  
+
+## Apply random effect of plot on seed production 
+#  Ep_seed.13[i]<- Ep_beta0_seed.13[water[i]] + ran.seed.13[i]
+#  Em_seed.13[i]<- Em_beta0_seed.13[water[i]] + ran.seed.13[i]
+#  }
+
+
+
+## Likelihood estimate for seed production from E+ and E- plants
+#  for(i in 1:N.Ep.seed.13){
+## eventually need to multiply the mean seed number per plot by the slope from the 
+## linear regression to turn the seed mass into seed count
+#  Ep.seed.mass.13[i] ~ dnorm(Ep_seed.13[seed.Ep.plot.13[i]], tau.sigma.s)
+  
+#  }
+
+#  for(i in 1:N.Em.seed.13){
+## eventually need to multiply the mean seed number per plot by the slope from the linear 
+## regression to turn the seed mass into seed count
+#    Em.seed.mass.13[i] ~ dnorm(Em_seed.14[seed.Em.plot.13[i]], tau.sigma.s)
+    
+#    }
+
+
+  ## derived quantity for endo-specific and water treatment seed mass prob
+ 
+#    Ep.seed.control.13<-Ep_beta0_seed.14[2]*slope.ep[2]
+#    Ep.seed.add.13<-Ep_beta0_seed.14[1]* slope.ep[1]
+#    Em.seed.control.13<-Em_beta0_seed.14[2]*slope.em[2]
+#    Em.seed.add.13<-Em_beta0_seed.14[1]*slope.ep[1]
+```
