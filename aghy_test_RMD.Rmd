@@ -4,6 +4,7 @@ author: "Marion Donald"
 date: "December 13, 2017"
 output: pdf_document
 bibliography: AGHY MS.bib
+csl: ecol-lett.csl
 ---
 
 ```{r setup, include=FALSE}
@@ -13,12 +14,20 @@ source("C:/Users/Marion Donald/Dropbox/Rice/Projects/AGHY/AGHY_SFAEF_Project/AGH
 ```
 
 ## Introduction
+* Microbial symbionts are increasingly recognized as affecting host phenotype in important ways, ranging from the host's nutrient acquisition and metabolism, pathogen susceptibiity, and ability to withstand environmental stressors [@Kreznar2017;@Theriot2014;@Malinowski2000].
+    + *Consider detailing these ways in which symbionts affect their hosts* -- could also find more grass (plant) related examples
+    + Kreznar *et al.* [-@Kreznar2017]: gut microbiota contribute to strain-specific susceptibility to diet-induced metabolic disease. 
+    + Theriot *et al.* [-@Theriot2014]: antibiotic-induced shifts in the mouse gut microbiome increase susceptibility to Clostridium difficile infection. 
+    + Malinowski *et al.* [-@Malinowski2000]: reviewed adaptations of endophyte-infected cool-season grasses to environmental stressors, specifically mechanisms of drought and mineral stress tolerance. 
 * Variable endosymbiont prevalences are commonly observed in nature
-* We used a life-cycle "decomposition" to determine where and how the symbiont prevalence is controlled via its influence on host demography and imperfect vertical transmission 
-* Previous work suggests that symbiont benefits to the host and therefore are influenced by environmental context. For this reason, we used an environmental manipulation to determine under what context symbiont prevalence is affected by environmental context. [@Afkhami2016]
+    + For vertically transmitted symbionts this is unexpected. -- *seems like this should come after introducing the theory of v.trans based on previous intros (i.e., Andrew's and Brittany's)*
+    + The direct transmission from parent to offspring tightly couples both symbiont and host fitness, thus the expectation arises for selection for host-symbiont mutualism and high symbiont prevalence within the host populations [@Ewald1987;@Sachs2004] *should also cite Clay 1990 and Cheplick and Faeth 2009*. -- *becoming v. similar to Andrew's intro and more recently Brittany's intro...*
+* We used a life-cycle "decomposition" to determine where and how the symbiont prevalence is controlled via its influence on host demography and through imperfect vertical transmission 
+* Previous work suggests that symbiont benefits to the host and therefore are influenced by environmental context. For this reason, we used an environmental manipulation to determine under what context symbiont prevalence is affected by environmental context. 
 
+\newpage
 ## *Agrostis hyemalis* Vital Rates Figures 
-All analyses were done in R [-@Computing2017]
+All analyses were done in R [@R2017]
 
 
 ### Survival 
@@ -35,6 +44,7 @@ Flowering probability estimates for recruits that in 2014, 2015, and 2016. Color
 f.all.plot
 ```
 
+\newpage
 ### Seed Production 
 * Having trouble estimatings seed production in the Bayesian model -- issue is arising when it comes time to index over the water treatment. 
 ```{r seed production, echo = TRUE}
@@ -135,3 +145,6 @@ f.all.plot
 #    Em.seed.control.13<-Em_beta0_seed.14[2]*slope.em[2]
 #    Em.seed.add.13<-Em_beta0_seed.14[1]*slope.ep[1]
 ```
+
+\newpage
+## References
