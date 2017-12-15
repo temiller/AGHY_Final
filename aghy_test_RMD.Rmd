@@ -3,31 +3,33 @@ title: "Status Update on *Agrostis hyemalis* Analysis"
 author: "Marion Donald"
 date: "December 13, 2017"
 output: pdf_document
+bibliography: AGHY MS.bib
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 
-source("C:/Users/Marion Donald/Dropbox/Rice/Projects/AGHY/AGHY_SFAEF_Project/AGHY analysis summer2017/AGHY_figures_RMarkdown_Script.R")
+source("C:/Users/Marion Donald/Dropbox/Rice/Projects/AGHY/AGHY_SFAEF_Project/AGHY analysis summer2017/AGHY_final/AGHY_figures_RMarkdown_Script.R")
 ```
 
 ## Introduction
 * Variable endosymbiont prevalences are commonly observed in nature
 * We used a life-cycle "decomposition" to determine where and how the symbiont prevalence is controlled via its influence on host demography and imperfect vertical transmission 
-* Previous work suggests that symbiont benefits to the host and therefore are influenced by environmental context. For this reason, we used an environmental manipulation to determine under what context symbiont prevalence is affected by environmental context. 
+* Previous work suggests that symbiont benefits to the host and therefore are influenced by environmental context. For this reason, we used an environmental manipulation to determine under what context symbiont prevalence is affected by environmental context. [@Afkhami2016]
 
 ## *Agrostis hyemalis* Vital Rates Figures 
+All analyses were done in R [-@Computing2017]
 
 
 ### Survival 
-Survival probability estimates for recruits that germinated in 2014 and survived until 2015 (2015 survival) and recruits that germinated in 2015 and survived until 2016 (2016 survival). Colors represent ambient rainfall and irrigated environmental contexts.
+Survival probability estimates for recruits that germinated in 2014 and survived until 2015 (2015 survival) and recruits that germinated in 2015 and survived until 2016 (2016 survival). Colors represent ambient rainfall and irrigated environmental contexts. Means and credible intervals shown by error bars. 
 
 ```{r survival, fig.height = 3.75, fig.width = 7.75, .echo=FALSE}
 s.all.plot
 ```
 
 ### Flowering 
-Flowering probability estimates for recruits that in 2014, 2015, and 2016. Colors represent ambient rainfall and irrigated environmental contexts.
+Flowering probability estimates for recruits that in 2014, 2015, and 2016. Colors represent ambient rainfall and irrigated environmental contexts. Means and credible intervals shown by error bars. 
 
 ```{r flowering, fig.height = 3.75, fig.width = 7.75, .echo=FALSE}
 f.all.plot
@@ -49,7 +51,7 @@ f.all.plot
 #for (i in 1:N.trt){
 #    intercept.ep[i] ~ dnorm(0, 0.001)
 #    slope.ep[i] ~ dunif(0, 1000) ## don't want a negative slope, using the 
-##                                  uniform distribution to have the min be 0  
+#                                  uniform distribution to have the min be 0  
 #    
 #  intercept.em[i] ~ dnorm(0, 0.001)
 #   slope.em[i] ~ dunif(0, 1000) ## don't want a negative slope, using the 
