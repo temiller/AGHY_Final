@@ -688,6 +688,9 @@ bayes.endo.prev<- bayes.endo %>%
   filter(endo == "Eplus") %>%
   rename(low = "2.5%", high = "97.5%")
 
+bayes.endo.prev$water[bayes.endo.prev$water == "add"] <- "Add"
+bayes.endo.prev$water[bayes.endo.prev$water == "control"]<- "Control"
+
 
 ## make an ordering column for the estimated prevalences 
 vec<-rep(x.levels, 6)
@@ -729,28 +732,17 @@ AGHY.endo.all <- full_join(AGHY.plots.all, bayes.endo.prev, by= "yr_t1")
 
 
 
-## 
+## WHOOHOO -- all in one figure!
 ## Plotting change in endophyte prevalence within the populations by water treatment
-ggplot(AGHY.endo.all, aes(order, order))+
-  geom_point(aes(prob_t, prob_t1))+
-  geom_line(aes(group= yr_t))+
-  geom_ribbon(aes(x = order, ymin=low, ymax= high, group = yr_t),alpha=0.3) +
-  facet_grid(yr_t~water.x)
-  
 
-h + geom_ribbon(aes(ymin = level - 1, ymax = level + 1), fill = "grey70") +
-  geom_line(aes(y = level))
-  
-  geom_path(data = AGHY.endo.all, aes(prob_t,mean))+
- geom_ribbon(aes(ymin=low, ymax= high),alpha=0.3)+
-  facet_grid(water.x~yr_t)
+ggplot(bayes.endo.prev, aes(order, order))+
+  geom_point(data = AGHY.plots.all, aes(prob_t, prob_t1)) +
+  geom_line(data = bayes.endo.prev, aes(order, y = mean)) + 
+  geom_ribbon(data = bayes.endo.prev, aes(order, ymin=low, ymax= high),alpha=0.3) +
+  facet_grid(water~yr_t1) 
 
 
-geom_ribbon(aes(ymin = level - 1, ymax = level + 1), fill = "grey70") +
-  geom_line(aes(y = level))
 
-geom_line(data=bayes.data.mean.control.15, aes(,AGHY.endochange.out$BUGSoutput$mean$Eplus.15.control.pred), size =1.5, col="red")+
-  geom_ribbon(data=bayes.data.summary.control.15,aes(ymin=`2.5%`,ymax=`97.5%`),alpha=0.3, col="red", fill = "red")+
 
 
 ## Splitting up the water and control data for comparison with the ggplot2 plots -- just making sure they're the same
