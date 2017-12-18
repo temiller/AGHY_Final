@@ -1,7 +1,8 @@
 load("AGHY_Bayes.RData")
 library(ggplot2)
 
-
+## endo prev at the plot level for all years + water treatments
+endo.all.plot
 
 ### need to resave the AGHY_Bayes_fit_change_rec_survival script with these new figures -- but for now running and calling them here
 
