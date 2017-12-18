@@ -1,8 +1,8 @@
 ## Authors: Marion and Tom
 ## Purpose: Bayesian analysis of endophyte prevalence and individual-level vital rates
 ## Uses data imported and 'cleaned' in AGHY_data_manipulation.R
-## Last update: 15 December 2017
-# Last update notes: getting endo change into a single ggplot2 figure and still working on combining the linear regression of seed mass to seed count to the seed mass data to turn it into seed numbers
+## Last update: 18 December 2017
+# Last update notes:  still working on combining the linear regression of seed mass to seed count to the seed mass data to turn it into seed numbers for recruitment estimates
 ######################################################
 
 ## Required packages
@@ -12,10 +12,12 @@ library(plyr)
 library(Cairo)
 library(tidyverse)
 
+# working directory in the AGHY_Final Folder
+setwd("C:/Users/Marion Donald/Dropbox/Rice/Projects/AGHY/AGHY_SFAEF_Project/AGHY analysis summer2017/AGHY_Final")
 ## load workspace which has all of the data files already read in
-load("AGHY_data_clean.1.RData")
+load("AGHY_data_clean.Dec18.RData")
 
-## Bayesian model for endo frequency change and survival 
+## Bayesian model for endo frequency change, survival and flowering (working on adding in recruitment) 
 
 sink("AGHY_endochange.txt")
 cat("
@@ -487,37 +489,37 @@ N.obs.16.flowering<-length(total.plants.16)
 ###########################################################################
 ## turn water status into integers FIGURE OUT HOW TO ADD IN WATER 
 ### FOR LINEAR REGRESSION 
-AGHY.seed.mass.count$water.seed.count<-as.integer(AGHY.seed.mass.count$water)
+#AGHY.seed.mass.count$water.seed.count<-as.integer(AGHY.seed.mass.count$water)
 
-seed.mass.Ep.data<- subset(AGHY.seed.mass.count, Endo == 1)
-water.seed.count.Ep <- seed.mass.Ep.data$water.seed.count
-Ep.seed.count<-log(seed.mass.Ep.data$seed_count)
-seed.mass.Ep<-log(seed.mass.Ep.data$seed_mass)
-N.Ep.seed.count<-length(seed.mass.Ep)
+#seed.mass.Ep.data<- subset(AGHY.seed.mass.count, Endo == 1)
+#water.seed.count.Ep <- seed.mass.Ep.data$water.seed.count
+#Ep.seed.count<-log(seed.mass.Ep.data$seed_count)
+#seed.mass.Ep<-log(seed.mass.Ep.data$seed_mass)
+#N.Ep.seed.count<-length(seed.mass.Ep)
 
-seed.mass.Em.data<- subset(AGHY.seed.mass.count, Endo == 0)
-water.seed.count.Em<- seed.mass.Em.data$water.seed.count
-Em.seed.count<-log(seed.mass.Em.data$seed_count)
-seed.mass.Em<-log(seed.mass.Em.data$seed_mass)
-N.Em.seed.count<-length(seed.mass.Em)
+#seed.mass.Em.data<- subset(AGHY.seed.mass.count, Endo == 0)
+#water.seed.count.Em<- seed.mass.Em.data$water.seed.count
+#Em.seed.count<-log(seed.mass.Em.data$seed_count)
+#seed.mass.Em<-log(seed.mass.Em.data$seed_mass)
+#N.Em.seed.count<-length(seed.mass.Em)
 
-mean.Em <-mean(seed.mass.Em.data$seed_mass)
+#mean.Em <-mean(seed.mass.Em.data$seed_mass)
 ###########################################################################
 ###########################################################################
 
 #### For gaussian model of seed mass 
 
-Ep.seed.mass.13.data<-subset(seed.mass.plant, endo == 1)
-Ep.seed.mass.13<-log(Ep.seed.mass.13.data$seeds.plot)
-seed.Ep.plot.13<-Ep.seed.mass.13.data$newplot
-N.Ep.seed.13<-length(seed.Ep.plot.13)
+#Ep.seed.mass.13.data<-subset(seed.mass.plant, endo == 1)
+#Ep.seed.mass.13<-log(Ep.seed.mass.13.data$seeds.plot)
+#seed.Ep.plot.13<-Ep.seed.mass.13.data$newplot
+#N.Ep.seed.13<-length(seed.Ep.plot.13)
 
 
 
-Em.seed.mass.13.data<-subset(seed.mass.plant, endo == 0)
-Em.seed.mass.13<-log(Em.seed.mass.13.data$seeds.plot)
-seed.Em.plot.13<-Em.seed.mass.13.data$newplot
-N.Em.seed.13<-length(seed.Em.plot.13)
+#Em.seed.mass.13.data<-subset(seed.mass.plant, endo == 0)
+#Em.seed.mass.13<-log(Em.seed.mass.13.data$seeds.plot)
+#seed.Em.plot.13<-Em.seed.mass.13.data$newplot
+#N.Em.seed.13<-length(seed.Em.plot.13)
 
 ###########################################################################
 ###########################################################################
@@ -580,20 +582,20 @@ jag.data<-list(N.trt=N.trt,
                obs.flowering.16=obs.flowering.16,
                y.16.plot.flowering=y.16.plot.flowering,
                N.obs.16.flowering=N.obs.16.flowering,
-               water.seed.count.Ep = water.seed.count.Ep, # water assignments for E+ lin reg
-               water.seed.count.Em = water.seed.count.Em, # water assignments for E- lin reg
-               Ep.seed.count = Ep.seed.count, # number of E+ seeds for lin reg
-               Em.seed.count = Em.seed.count, # number of E- seeds for lin reg
-               seed.mass.Ep = seed.mass.Ep, # E+ seed mass for lin reg
-               seed.mass.Em = seed.mass.Em, # E- seed mass for lin reg
-               N.Ep.seed.count = N.Ep.seed.count, # length of E+ individuals for lin reg
-               N.Em.seed.count = N.Em.seed.count, # length  f E- individuals for lin reg
-               Ep.seed.mass.13 = Ep.seed.mass.13, # mass of Ep seeds per plot 2013 (original plants)
-               Em.seed.mass.13 = Em.seed.mass.13, # mass of Em seeds per plot 2013 (original plants)
-               seed.Ep.plot.13 = seed.Ep.plot.13, # plot ID for indexing 2013 (original plants)
-               seed.Em.plot.13 = seed.Em.plot.13, # plot ID for indexing 2013 (original plants)
-               N.Ep.seed.13 = N.Ep.seed.13, # length of E+ plants for looping
-               N.Em.seed.13 = N.Em.seed.13, # length of E- plants for looping
+               #water.seed.count.Ep = water.seed.count.Ep, # water assignments for E+ lin reg
+               #water.seed.count.Em = water.seed.count.Em, # water assignments for E- lin reg
+               #Ep.seed.count = Ep.seed.count, # number of E+ seeds for lin reg
+               #Em.seed.count = Em.seed.count, # number of E- seeds for lin reg
+               #seed.mass.Ep = seed.mass.Ep, # E+ seed mass for lin reg
+               #seed.mass.Em = seed.mass.Em, # E- seed mass for lin reg
+               #N.Ep.seed.count = N.Ep.seed.count, # length of E+ individuals for lin reg
+               #N.Em.seed.count = N.Em.seed.count, # length  f E- individuals for lin reg
+               #Ep.seed.mass.13 = Ep.seed.mass.13, # mass of Ep seeds per plot 2013 (original plants)
+               #Em.seed.mass.13 = Em.seed.mass.13, # mass of Em seeds per plot 2013 (original plants)
+               #seed.Ep.plot.13 = seed.Ep.plot.13, # plot ID for indexing 2013 (original plants)
+               #seed.Em.plot.13 = seed.Em.plot.13, # plot ID for indexing 2013 (original plants)
+               #N.Ep.seed.13 = N.Ep.seed.13, # length of E+ plants for looping
+               #N.Em.seed.13 = N.Em.seed.13, # length of E- plants for looping
                x.levels=x.levels,
                N.x.levels=N.x.levels)
 
@@ -762,8 +764,6 @@ bayes.data.summary.survival.16<-bayes.data.summary[c(8,10, 18,20),c(1,3,7)]
 
 bayes.data.summary.survival.15<-bayes.data.summary[c(7,9, 17,19),c(1,3,7)]
 
-
-
 bayes.data.summary.survival.15<-cbind(rownames(bayes.data.summary.survival.15),bayes.data.summary.survival.15)
 names(bayes.data.summary.survival.15)[names(bayes.data.summary.survival.15) =="rownames(bayes.data.summary.survival.15)"] <- "treatment"
 
@@ -787,8 +787,6 @@ bayes.data.summary.survival.15.water$treatment<- factor(bayes.data.summary.survi
 
 bayes.data.summary.survival.16.water$treatment<- factor(bayes.data.summary.survival.16.water$treatment, 
                                                         levels = bayes.data.summary.survival.16.water$treatment[order(bayes.data.summary.survival.16.water$water.treat)])
-
-
 
 survival.all<-rbind(bayes.data.summary.survival.15.water, bayes.data.summary.survival.16.water)
 endo.stat<-c(0,0,1,1,0,0,1,1)
@@ -818,25 +816,16 @@ s.all.plot<- ggplot(survival.all, aes(endo.water, mean, colour = water.treat))+
 ###################################### ###################################### 
 flowering.all<-bayes.data.summary[c(1:6,11:16),c(1,3,7)]
 
-
-
-
-
 flowering.all<-cbind(rownames(flowering.all),flowering.all)
 names(flowering.all)[names(flowering.all) =="rownames(flowering.all)"] <- "treatment"
-
-
 
 water.treat<-c("Irrigated","Irrigated","Irrigated", "Ambient","Ambient","Ambient", "Irrigated","Irrigated","Irrigated", "Ambient","Ambient","Ambient")
 year<-c("2014","2015","2016","2014","2015","2016","2014","2015","2016","2014","2015","2016")
 flowering.all<-cbind(flowering.all,water.treat,year)
 
-
-
 ## Change this to a factor ordered by water treatment so that ggplot2 can recognize it and plot it in the order I want
 flowering.all$treatment<- factor(flowering.all$treatment, 
                                                         levels = flowering.all$treatment[order(flowering.all$water.treat)])
-
 
 ## add in column for endo stat 
 endo.stat<-c(0,0,0,0,0,0,1,1,1,1,1,1)
@@ -860,32 +849,10 @@ f.all.plot<- ggplot(flowering.all, aes(endo.water, mean, colour = water.treat))+
 
 
 #### save workspace to call for RMarkdown file 
-save.image("AGHY_Bayes.RData")
-
-CairoPDF("flowering.pdf", width = 20, height = 5, bg='transparent')
-grid.arrange(p16.control, p16.add, nrow=2, ncol=1) 
+#save.image("AGHY_Bayes.RData")
 
 
-dev.off()
-
-
-CairoPDF("psurv16.pdf",
-         width = 7, height = 5, onefile = TRUE, bg = 'transparent')
-p.surv.16
-dev.off()
-
-
-dev.off()
-
-
-CairoPDF("psurv15.pdf",
-         width = 7, height = 5, onefile = TRUE,bg = 'transparent')
-p.surv.15
-dev.off()
-
-
-
-
+##### starting on seed data -- not finished 
 bayes.data.seeds$trt<-NA
 
 bayes.data.seeds$trt<-c("Em.seed.add.14","Em.seed.control.14","Ep.seed.add.14","Ep.seed.control.14")
@@ -899,5 +866,4 @@ ggplot(bayes.data.seeds, aes(x=trt, y=mean, colour= water)) +
   scale_color_manual(breaks = c("0", "1"),
                     values=c("red", "blue"))+
   labs( x = "Treatment",
-        y = "Mean log(seeds produced)")
-
+        y = "Mean log(seeds produced)") 
