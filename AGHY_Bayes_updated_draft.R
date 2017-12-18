@@ -662,14 +662,13 @@ nc<-3
 AGHY.endochange.out<-jags(data=jag.data,inits=inits,parameters.to.save=parameters,model.file="AGHY_endochange.txt",
                           n.thin=nt,n.chains=nc,n.burnin=nb,n.iter=ni,DIC=T,working.directory=getwd())
 
-
-df<-AGHY.endochange.out$BUGSoutput$summary
-
 #mcmcplot(AGHY.endochange.out)
 
 
-### Fiddling with figures -- this will be it's own script later
+### Figure Section
 
+
+## Create a dataframe that keeps the rownames
 bayes.data.summary1<-as.data.frame(AGHY.endochange.out$BUGSoutput$summary, keep.rownames = TRUE)
 
 
@@ -678,7 +677,7 @@ bayes.data.summary1$names<- rownames(bayes.data.summary1)
 
 
 ## separate the row names so that we can identify the estimated values by "type"
-#### ULTIMATELY WANT TO RENAME THE ENDO CHANGE OUTPUT SO IT'S IN THE SAME FORMAT AS THE OTHERS....
+#### (ULTIMATELY WANT TO RENAME THE ENDO CHANGE OUTPUT SO IT'S IN THE SAME FORMAT AS THE OTHERS....)
 bayes.endo<-bayes.data.summary1 %>%
   separate(names, c("endo", "type_year", "water", "year"), extra = "merge", fill = "left")
 
@@ -691,6 +690,9 @@ bayes.endo.prev<- bayes.endo %>%
 bayes.endo.prev$water[bayes.endo.prev$water == "add"] <- "Add"
 bayes.endo.prev$water[bayes.endo.prev$water == "control"]<- "Control"
 
+
+bayes.endo.prev$treatment[bayes.endo.prev$water == "Add"] <- "Irrigated"
+bayes.endo.prev$treatment[bayes.endo.prev$water == "Control"]<- "Ambient"
 
 ## make an ordering column for the estimated prevalences 
 vec<-rep(x.levels, 6)
@@ -720,6 +722,14 @@ AGHY.plots.all<- AGHY.plots.gathered %>%
 
 AGHY.plots.all <- cbind(AGHY.plots.all, prob_t1)
 
+AGHY.plots.all$treatment[AGHY.plots.all$water == "Add"] <- "Irrigated"
+AGHY.plots.all$treatment[AGHY.plots.all$water == "Control"]<- "Ambient"
+
+
+AGHY.plots.all$transition[AGHY.plots.all$yr_t1 == "p.14"]<- "2013 - 2014"
+AGHY.plots.all$transition[AGHY.plots.all$yr_t1 == "p.15"]<- "2014 - 2015"
+AGHY.plots.all$transition[AGHY.plots.all$yr_t1 == "p.16"]<- "2015 - 2016"
+
 ## create a matching column (yr_t) in the endo df
 
 bayes.endo.prev$p<- "p."
@@ -727,9 +737,9 @@ bayes.endo.prev$p<- "p."
 bayes.endo.prev$yr_t1 <- paste(bayes.endo.prev$p,bayes.endo.prev$type_year, sep="")
 
 
-## add in the endo.prev dataframe
-AGHY.endo.all <- full_join(AGHY.plots.all, bayes.endo.prev, by= "yr_t1")
-
+bayes.endo.prev$transition[bayes.endo.prev$yr_t1 == "p.14"]<- "2013 - 2014"
+bayes.endo.prev$transition[bayes.endo.prev$yr_t1 == "p.15"]<- "2014 - 2015"
+bayes.endo.prev$transition[bayes.endo.prev$yr_t1 == "p.16"]<- "2015 - 2016"
 
 
 ## WHOOHOO -- all in one figure!
@@ -737,203 +747,10 @@ AGHY.endo.all <- full_join(AGHY.plots.all, bayes.endo.prev, by= "yr_t1")
 
 ggplot(bayes.endo.prev, aes(order, order))+
   geom_point(data = AGHY.plots.all, aes(prob_t, prob_t1)) +
-  geom_line(data = bayes.endo.prev, aes(order, y = mean)) + 
+  geom_line(data = bayes.endo.prev, aes(order, y = mean), size =1) + 
   geom_ribbon(data = bayes.endo.prev, aes(order, ymin=low, ymax= high),alpha=0.3) +
-  facet_grid(water~yr_t1) +
+  facet_grid(transition~treatment) +
   labs(x = "Endophyte prevalence in year t", y = "Endophyte prevalence in year t+1") 
-
-
-
-
-
-
-## Splitting up the water and control data for comparison with the ggplot2 plots -- just making sure they're the same
-plot(x.levels,x.levels,type="n")
-lines(x.levels,AGHY.endochange.out$BUGSoutput$mean$Eplus.14.add.pred,lwd=4,col="blue")
-lines(x.levels,AGHY.endochange.out$BUGSoutput$summary[33:133,"2.5%"],lwd=1,col="blue")
-lines(x.levels,AGHY.endochange.out$BUGSoutput$summary[33:133,"97.5%"],lwd=1,col="blue")
-
-abline(0,1,col="gray")
-points(AGHY.plots$target_init_freq[AGHY.plots$water=="Add"],
-       AGHY.plots$p.14[AGHY.plots$water=="Add"],col="blue",cex=2)
-
-plot(x.levels,x.levels,type="n")
-lines(x.levels,AGHY.endochange.out$BUGSoutput$mean$Eplus.14.control.pred,lwd=4,col="red")
-lines(x.levels,AGHY.endochange.out$BUGSoutput$summary[134:234,"2.5%"],lwd=1,col="red")
-lines(x.levels,AGHY.endochange.out$BUGSoutput$summary[134:234,"97.5%"],lwd=1,col="red")
-points(AGHY.plots$target_init_freq[AGHY.plots$water=="Control"],
-       AGHY.plots$p.14[AGHY.plots$water=="Control"],col="red",cex=2)
-
-## Selecting out the water addition and control plots for ggplot2 plots
-AGHY.plots.control<-filter(AGHY.plots, water == "Control")
-AGHY.plots.add<-filter(AGHY.plots, water == "Add")
-
-## Creating dataframes for ggplot2 plotting 2014
-bayes.data.mean.control.14<-as.data.frame(AGHY.endochange.out$BUGSoutput$mean$Eplus.14.control.pred)
-bayes.data.mean.add.14<-as.data.frame(AGHY.endochange.out$BUGSoutput$mean$Eplus.14.add.pred)
-bayes.data.summary<-as.data.frame(AGHY.endochange.out$BUGSoutput$summary)
-bayes.data.summary.control.14<-bayes.data.summary[c(134:234), c(3,7)]
-bayes.data.summary.add.14<-bayes.data.summary[c(33:133), c(3,7)]
-
-### Thinking about plotting the demography plant E+ output -- but not sure if it makes sense
-#bayes.demo.e.pos<-as.data.frame(AGHY.endochange.out$BUGSoutput$mean$N.e.pos.demo.14)
-#bayes.data.summary.demo<-as.data.frame(AGHY.endochange.out$BUGSoutput$summary)
-#bayes.data.summary.demo<-as.data.frame(bayes.data.summary.demo[c(607:741),c(3,7)])
-#bayes.data.summary.demo$mean.demo<-AGHY.endochange.out$BUGSoutput$mean$N.e.pos.demo.14
-#bayes.data.summary.demo$num.demo<-AGHY.merge.recruits.14.d$total_demo.14
-
-#x.levels.demo<-seq(0,4,.5)
-#ggplot(bayes.data.summary.demo, aes(x.levels.demo,x.levels.demo))+
-#  geom_line(data = bayes.data.summary.demo, aes(, mean.demo))
-
-## Plotting just the water control 2014
-ggplot(bayes.data.mean.control.14, aes(x.levels, x.levels))+
-  geom_point(data = AGHY.plots.control, aes(target_init_freq, p.14))+
-  geom_line(data=bayes.data.mean.control.14, aes(,AGHY.endochange.out$BUGSoutput$mean$Eplus.14.control.pred))+
-  geom_ribbon(data=bayes.data.summary.control.14,aes(ymin=`2.5%`,ymax=`97.5%`),alpha=0.3)
-
-## Plotting just the water addition 2014
-ggplot(bayes.data.mean.add.14, aes(x.levels, x.levels))+
-  geom_point(data = AGHY.plots.add, aes(target_init_freq, p.14))+
-  geom_line(data=bayes.data.mean.add.14, aes(,AGHY.endochange.out$BUGSoutput$mean$Eplus.14.add.pred))+
-  geom_ribbon(data=bayes.data.summary.add.14,aes(ymin=`2.5%`,ymax=`97.5%`),alpha=0.3)
-
-## Combined plot for water control and addition for 2014
-p14<-ggplot(bayes.data.mean.control.14, aes(x.levels, x.levels))+
-  geom_point(data = AGHY.plots.control, aes(target_init_freq, p.14), col="red")+
-  geom_line(data=bayes.data.mean.control.14, aes(,AGHY.endochange.out$BUGSoutput$mean$Eplus.14.control.pred), size =1.5, col="red")+
-  geom_ribbon(data=bayes.data.summary.control.14,aes(ymin=`2.5%`,ymax=`97.5%`),alpha=0.3, col="red", fill = "red")+
-  geom_point(data = AGHY.plots.add, aes(target_init_freq, p.14), col="blue")+
-  geom_line(data=bayes.data.mean.add.14, aes(,AGHY.endochange.out$BUGSoutput$mean$Eplus.14.add.pred), size=1.5, col="blue")+
-  geom_ribbon(data=bayes.data.summary.add.14,aes(ymin=`2.5%`,ymax=`97.5%`),alpha=0.3, col="blue", fill="blue")+
-  geom_abline()+
-  labs(x = "E+ 2013", y = "E+ 2014")+
-  theme_bw() + theme(panel.border = element_blank())
-
-
-## Combined plot for water control and addition for 2014
-p14.control<-ggplot(bayes.data.mean.control.14, aes(x.levels, x.levels))+
-  geom_point(data = AGHY.plots.control, aes(target_init_freq, p.14), col="orange3")+
-  geom_line(data=bayes.data.mean.control.14, aes(,AGHY.endochange.out$BUGSoutput$mean$Eplus.14.control.pred), size =1.5, col="orange3")+
-  geom_ribbon(data=bayes.data.summary.control.14,aes(ymin=`2.5%`,ymax=`97.5%`),alpha=0.3, col="orange", fill = "orange")+
-  #geom_point(data = AGHY.plots.add, aes(target_init_freq, p.14), col="blue")+
-  #geom_line(data=bayes.data.mean.add.14, aes(,AGHY.endochange.out$BUGSoutput$mean$Eplus.14.add.pred), size=1.5, col="blue")+
-  #geom_ribbon(data=bayes.data.summary.add.14,aes(ymin=`2.5%`,ymax=`97.5%`),alpha=0.3, col="blue", fill="blue")+
-  geom_abline()+
-  labs(x = "E+ 2013", y = "E+ 2014")#+
-#theme_bw() + theme(panel.border = element_blank())
-
-
-p14.add<-ggplot(bayes.data.mean.control.14, aes(x.levels, x.levels))+
-  #geom_point(data = AGHY.plots.control, aes(target_init_freq, p.14), col="red")+
-  #geom_line(data=bayes.data.mean.control.14, aes(,AGHY.endochange.out$BUGSoutput$mean$Eplus.14.control.pred), size =1.5, col="red")+
-  #geom_ribbon(data=bayes.data.summary.control.14,aes(ymin=`2.5%`,ymax=`97.5%`),alpha=0.3, col="red", fill = "red")+
-  geom_point(data = AGHY.plots.add, aes(target_init_freq, p.14), col="steelblue4")+
-  geom_line(data=bayes.data.mean.add.14, aes(,AGHY.endochange.out$BUGSoutput$mean$Eplus.14.add.pred), size=1.5, col="steelblue")+
-  geom_ribbon(data=bayes.data.summary.add.14,aes(ymin=`2.5%`,ymax=`97.5%`),alpha=0.3, col="steelblue", fill="steelblue")+
-  geom_abline()+
-  labs(x = "E+ 2013", y = "E+ 2014")#+
-#theme_bw() + theme(panel.border = element_blank())
-
-
-
-
-
-## Creating dataframes for ggplot2 plotting 2015
-bayes.data.mean.control.15<-as.data.frame(AGHY.endochange.out$BUGSoutput$mean$Eplus.15.control.pred)
-bayes.data.mean.add.15<-as.data.frame(AGHY.endochange.out$BUGSoutput$mean$Eplus.15.add.pred)
-bayes.data.summary<-as.data.frame(AGHY.endochange.out$BUGSoutput$summary)
-bayes.data.summary.control.15<-bayes.data.summary[c(320:420), c(3,7)]
-bayes.data.summary.add.15<-bayes.data.summary[c(219:319), c(3,7)]
-
-## Combined plot for water control and addition for 2015
-p15<-ggplot(bayes.data.mean.control.15, aes(x.levels, x.levels))+
-  geom_point(data = AGHY.plots.control, aes(p.14, p.15), col="red")+
-  geom_line(data=bayes.data.mean.control.15, aes(,AGHY.endochange.out$BUGSoutput$mean$Eplus.15.control.pred), size =1.5, col="red")+
-  geom_ribbon(data=bayes.data.summary.control.15,aes(ymin=`2.5%`,ymax=`97.5%`),alpha=0.3, col="red", fill = "red")+
-  geom_point(data = AGHY.plots.add, aes(p.14, p.15), col="blue")+
-  geom_line(data=bayes.data.mean.add.15, aes(,AGHY.endochange.out$BUGSoutput$mean$Eplus.15.add.pred), size=1.5, col="blue")+
-  geom_ribbon(data=bayes.data.summary.add.15,aes(ymin=`2.5%`,ymax=`97.5%`),alpha=0.3, col="blue", fill="blue")+
-  geom_abline()+
-  labs(x = "E+  2014", y = "E+ 2015")#+
-#theme_bw() + theme(panel.border = element_blank())
-
-
-p15.control<-ggplot(bayes.data.mean.control.15, aes(x.levels, x.levels))+
-  geom_point(data = AGHY.plots.control, aes(p.14, p.15), col="red")+
-  geom_line(data=bayes.data.mean.control.15, aes(,AGHY.endochange.out$BUGSoutput$mean$Eplus.15.control.pred), size =1.5, col="red")+
-  geom_ribbon(data=bayes.data.summary.control.15,aes(ymin=`2.5%`,ymax=`97.5%`),alpha=0.3, col="red", fill = "red")+
-  #geom_point(data = AGHY.plots.add, aes(p.14, p.15), col="blue")+
-  #geom_line(data=bayes.data.mean.add.15, aes(,AGHY.endochange.out$BUGSoutput$mean$Eplus.15.add.pred), size=1.5, col="blue")+
-  #geom_ribbon(data=bayes.data.summary.add.15,aes(ymin=`2.5%`,ymax=`97.5%`),alpha=0.3, col="blue", fill="blue")+
-  geom_abline()+
-  labs(x = "E+  2014", y = "E+ 2015")#+
-#theme_bw() + theme(panel.border = element_blank())
-
-p15.add<-ggplot(bayes.data.mean.control.15, aes(x.levels, x.levels))+
-  #geom_point(data = AGHY.plots.control, aes(p.14, p.15), col="red")+
-  #geom_line(data=bayes.data.mean.control.15, aes(,AGHY.endochange.out$BUGSoutput$mean$Eplus.15.control.pred), size =1.5, col="red")+
-  #eom_ribbon(data=bayes.data.summary.control.15,aes(ymin=`2.5%`,ymax=`97.5%`),alpha=0.3, col="red", fill = "red")+
-  geom_point(data = AGHY.plots.add, aes(p.14, p.15), col="blue")+
-  geom_line(data=bayes.data.mean.add.15, aes(,AGHY.endochange.out$BUGSoutput$mean$Eplus.15.add.pred), size=1.5, col="blue")+
-  geom_ribbon(data=bayes.data.summary.add.15,aes(ymin=`2.5%`,ymax=`97.5%`),alpha=0.3, col="blue", fill="blue")+
-  geom_abline()+
-  labs(x = "E+  2014", y = "E+ 2015")#+
-#theme_bw() + theme(panel.border = element_blank())
-
-
-
-## Creating dataframes for ggplot2 plotting 2016
-bayes.data.mean.control.16<-as.data.frame(AGHY.endochange.out$BUGSoutput$mean$Eplus.16.control.pred)
-bayes.data.mean.add.16<-as.data.frame(AGHY.endochange.out$BUGSoutput$mean$Eplus.16.add.pred)
-bayes.data.summary<-as.data.frame(AGHY.endochange.out$BUGSoutput$summary)
-bayes.data.summary.control.16<-bayes.data.summary[c(522:622), c(3,7)]
-bayes.data.summary.add.16<-bayes.data.summary[c(421:521), c(3,7)]
-
-## Combined plot for water control and addition 2016
-p16<-ggplot(bayes.data.mean.control.16, aes(x.levels, x.levels))+
-  geom_point(data = AGHY.plots.control, aes(p.15, p.16), col="red")+
-  geom_line(data=bayes.data.mean.control.16, aes(,AGHY.endochange.out$BUGSoutput$mean$Eplus.16.control.pred), size =1.5, col="red")+
-  geom_ribbon(data=bayes.data.summary.control.16,aes(ymin=`2.5%`,ymax=`97.5%`),alpha=0.3, col="red", fill = "red")+
-  geom_point(data = AGHY.plots.add, aes(p.15, p.16), col="blue")+
-  geom_line(data=bayes.data.mean.add.16, aes(,AGHY.endochange.out$BUGSoutput$mean$Eplus.16.add.pred), size=1.5, col="blue")+
-  geom_ribbon(data=bayes.data.summary.add.16,aes(ymin=`2.5%`,ymax=`97.5%`),alpha=0.3, col="blue", fill="blue")+
-  geom_abline()+
-  labs(x = "E+ 2015", y = "E+ 2016")#+
-#theme_bw() + theme(panel.border = element_blank())
-
-p16.control<-ggplot(bayes.data.mean.control.16, aes(x.levels, x.levels))+
-  geom_point(data = AGHY.plots.control, aes(p.15, p.16), col="red")+
-  geom_line(data=bayes.data.mean.control.16, aes(,AGHY.endochange.out$BUGSoutput$mean$Eplus.16.control.pred), size =1.5, col="red")+
-  geom_ribbon(data=bayes.data.summary.control.16,aes(ymin=`2.5%`,ymax=`97.5%`),alpha=0.3, col="red", fill = "red")+
-  #geom_point(data = AGHY.plots.add, aes(p.15, p.16), col="blue")+
-  #geom_line(data=bayes.data.mean.add.16, aes(,AGHY.endochange.out$BUGSoutput$mean$Eplus.16.add.pred), size=1.5, col="blue")+
-  #geom_ribbon(data=bayes.data.summary.add.16,aes(ymin=`2.5%`,ymax=`97.5%`),alpha=0.3, col="blue", fill="blue")+
-  geom_abline()+
-  labs(x = "E+ 2015", y = "E+ 2016")
-#theme_bw() + theme(panel.border = element_blank())
-
-p16.add<-ggplot(bayes.data.mean.control.16, aes(x.levels, x.levels))+
-  #geom_point(data = AGHY.plots.control, aes(p.15, p.16), col="red")+
-  #geom_line(data=bayes.data.mean.control.16, aes(,AGHY.endochange.out$BUGSoutput$mean$Eplus.16.control.pred), size =1.5, col="red")+
-  #geom_ribbon(data=bayes.data.summary.control.16,aes(ymin=`2.5%`,ymax=`97.5%`),alpha=0.3, col="red", fill = "red")+
-  geom_point(data = AGHY.plots.add, aes(p.15, p.16), col="blue")+
-  geom_line(data=bayes.data.mean.add.16, aes(,AGHY.endochange.out$BUGSoutput$mean$Eplus.16.add.pred), size=1.5, col="blue")+
-  geom_ribbon(data=bayes.data.summary.add.16,aes(ymin=`2.5%`,ymax=`97.5%`),alpha=0.3, col="blue", fill="blue")+
-  geom_abline()+
-  labs(x = "E+ 2015", y = "E+ 2016")
-#theme_bw() + theme(panel.border = element_blank())
-
-
-
-
-
-
-
-
-
-
-bayes.data.seeds<- bayes.data.summary[c(7,8,19,20), c(1,3,7)]
 
 
 ############################################################################################
@@ -996,36 +813,6 @@ s.all.plot<- ggplot(survival.all, aes(endo.water, mean, colour = water.treat))+
 
 
 
-#### Plot the mean probability of survival for E+ and E- plants by water and control treatments with the 2.5% and 97.5% Credible Intervals
-p.surv.15<-ggplot(bayes.data.summary.survival.15.water, aes(treatment, mean, colour=water.treat))+
-  geom_point(size=3, stat="identity")+
-  geom_errorbar(aes(ymin=`2.5%`, ymax=`97.5%`), width=.5, size =1)+
-  scale_colour_manual(values = c("orange3","steelblue4"))+
-  scale_x_discrete("Symbiont Presence", labels = c("Em.surv.add.15" = "E+","Em.surv.control.15" = "E-",
-                                                  "Ep.surv.add.15" = "E+","Ep.surv.control.15" = "E-"))+
-  labs(title = "2015 Survival", y = "Probability of Survival")+
-  scale_y_continuous(limits = c(0,1))+  
-  guides(color=guide_legend("Watering Regime"))+
-
-  theme_bw() #+ theme(panel.border = element_blank())
-
-
-
-#### Plot the mean probability of survival for E+ and E- plants by water and control treatments with the 2.5% and 97.5% Credible Intervals
-p.surv.16<-ggplot(bayes.data.summary.survival.16.water, aes(treatment, mean, colour=water.treat))+
-  geom_point(size=3, stat="identity")+
-  geom_errorbar(aes(ymin=`2.5%`, ymax=`97.5%`), width=.5, size =1)+
-  scale_colour_manual(values = c("orange3","steelblue4"))+
-  scale_x_discrete("Symbiont Presence", labels = c("Em.surv.add.16" = "-","Em.surv.control.16" = "-",
-                                                  "Ep.surv.add.16" = "+","Ep.surv.control.16" = "+"))+
-  labs(title = "2016 Survival", y = "Probability of Survival")+
-  scale_y_continuous(limits = c(0,1))+  
-  theme_bw()+
-  guides(color=guide_legend("Watering Regime"))
-#+ theme(panel.border = element_blank())
-
-
-
 ###################################### ###################################### 
 ###################################### FLOWERING ###################################### 
 ###################################### ###################################### 
@@ -1070,52 +857,6 @@ f.all.plot<- ggplot(flowering.all, aes(endo.water, mean, colour = water.treat))+
   theme(text = element_text(size=18))+
   theme_bw() + #+ theme(panel.border = element_blank()) +
   facet_grid(~year)
-
-
-
-flowering.14<-subset(flowering.all, year == 2014)
-flowering.15<-subset(flowering.all, year == 2015)
-flowering.16<-subset(flowering.all, year == 2016)
-
-#### Plot the mean probability of flowering for E+ and E- plants by water and control treatments with the 2.5% and 97.5% Confidence Intervals
-p.flow.14<-ggplot(flowering.14, aes(treatment, mean, colour=water.treat))+
-  geom_point(size=3, stat="identity")+
-  geom_errorbar(aes(ymin=`2.5%`, ymax=`97.5%`), width=.5, size =1)+
-  scale_colour_manual(values = c("orange3","steelblue4"))+
-  scale_x_discrete("Endophyte Status", labels = c("Em.flower.add.14" = "E-","Em.flower.control.14" = "E-",
-                                                  "Ep.flower.add.14" = "E+","Ep.flower.control.14" = "E+"))+
-  labs(title = "2014 Flowering", y = "Probability of Flowering")+
-  scale_y_continuous(limits = c(0,1))+  
-  guides(color=guide_legend("Watering Regime"))+
-  
-  theme_bw() #+ theme(panel.border = element_blank())
-
-
-p.flow.15<-ggplot(flowering.15, aes(treatment, mean, colour=water.treat))+
-  geom_point(size=3, stat="identity")+
-  geom_errorbar(aes(ymin=`2.5%`, ymax=`97.5%`), width=.5, size =1)+
-  scale_colour_manual(values = c("orange3","steelblue4"))+
-  scale_x_discrete("", labels = c("Em.flower.add.15" = "Non-host","Em.flower.control.15" = "Non-host",
-                                                  "Ep.flower.add.15" = "Host","Ep.flower.control.15" = "Host"))+
-  labs(title = "2015 Flowering", y = "Probability of Flowering")+
-  scale_y_continuous(limits = c(0,1))+  
-  guides(color=guide_legend("Watering Regime"))+
-  
-  theme_bw() #+ theme(panel.border = element_blank())
-
-
-p.flow.16<-ggplot(flowering.16, aes(treatment, mean, colour=water.treat))+
-  geom_point(size=3, stat="identity")+
-  geom_errorbar(aes(ymin=`2.5%`, ymax=`97.5%`), width=.5, size =1)+
-  scale_colour_manual(values = c("orange3","steelblue4"))+
-  scale_x_discrete("", labels = c("Em.flower.add.16" = "Non-host","Em.flower.control.16" = "Non-Host",
-                                                  "Ep.flower.add.16" = "Host","Ep.flower.control.16" = "Host"))+
-  labs(title = "2016 Flowering", y = "Probability of Flowering")+
-  scale_y_continuous(limits = c(0,1))+  
-  #theme(legend.position="none")+
-  guides(color=guide_legend("Watering Regime"))+
-  
-  theme_bw() #+ theme(panel.border = element_blank())
 
 
 #### save workspace to call for RMarkdown file 
