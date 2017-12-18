@@ -1,8 +1,8 @@
 ## Authors: Marion and Tom
 ## Purpose: Bayesian analysis of endophyte prevalence and individual-level vital rates
 ## Uses data imported and 'cleaned' in AGHY_data_manipulation.R
-## Last update: 21 July 2017 (no longer summer solstice)
-# Last update notes: working on combining the linear regression of seed mass to seed count to the seed mass data to turn it into seed numbers
+## Last update: 15 December 2017
+# Last update notes: getting endo change into a single ggplot2 figure and still working on combining the linear regression of seed mass to seed count to the seed mass data to turn it into seed numbers
 ######################################################
 
 ## Required packages
@@ -685,7 +685,14 @@ bayes.endo<-bayes.data.summary1 %>%
 
 ## make a dataframe of just the estimates for change in endophyte prevalence within each transition year
 bayes.endo.prev<- bayes.endo %>%
-  filter(endo == "Eplus")
+  filter(endo == "Eplus") %>%
+  rename(low = "2.5%", high = "97.5%")
+
+
+## make an ordering column for the estimated prevalences 
+vec<-rep(x.levels, 6)
+
+bayes.endo.prev$order<-vec
 
 ## append latent state estimates of plot frequency to AGHY.plots data frame
 AGHY.plots$p.14<-AGHY.endochange.out$BUGSoutput$mean$p.14
@@ -710,17 +717,37 @@ AGHY.plots.all<- AGHY.plots.gathered %>%
 
 AGHY.plots.all <- cbind(AGHY.plots.all, prob_t1)
 
+## create a matching column (yr_t) in the endo df
+
+bayes.endo.prev$p<- "p."
+
+bayes.endo.prev$yr_t1 <- paste(bayes.endo.prev$p,bayes.endo.prev$type_year, sep="")
+
 
 ## add in the endo.prev dataframe
-AGHY.endo.all <- full_join(AGHY.plots.all, bayes.endo.prev)
+AGHY.endo.all <- full_join(AGHY.plots.all, bayes.endo.prev, by= "yr_t1")
+
+
 
 ## 
 ## Plotting change in endophyte prevalence within the populations by water treatment
-ggplot(AGHY.plots.all)+
-  geom_point(data = AGHY.plots.all, aes(prob_t, prob_t1))+
-  #geom_line(data = bayes.endo.prev, aes(,mean))+
- # geom_ribbon(aes(ymin=`2.5%`,ymax=`97.5%`),alpha=0.3)+
-  facet_grid(water~yr_t)
+ggplot(AGHY.endo.all, aes(order, order))+
+  geom_point(aes(prob_t, prob_t1))+
+  geom_line(aes(group= yr_t))+
+  geom_ribbon(aes(x = order, ymin=low, ymax= high, group = yr_t),alpha=0.3) +
+  facet_grid(yr_t~water.x)
+  
+
+h + geom_ribbon(aes(ymin = level - 1, ymax = level + 1), fill = "grey70") +
+  geom_line(aes(y = level))
+  
+  geom_path(data = AGHY.endo.all, aes(prob_t,mean))+
+ geom_ribbon(aes(ymin=low, ymax= high),alpha=0.3)+
+  facet_grid(water.x~yr_t)
+
+
+geom_ribbon(aes(ymin = level - 1, ymax = level + 1), fill = "grey70") +
+  geom_line(aes(y = level))
 
 geom_line(data=bayes.data.mean.control.15, aes(,AGHY.endochange.out$BUGSoutput$mean$Eplus.15.control.pred), size =1.5, col="red")+
   geom_ribbon(data=bayes.data.summary.control.15,aes(ymin=`2.5%`,ymax=`97.5%`),alpha=0.3, col="red", fill = "red")+
