@@ -747,7 +747,7 @@ bayes.endo.prev$transition[bayes.endo.prev$yr_t1 == "p.16"]<- "2015 - 2016"
 ## WHOOHOO -- all in one figure!
 ## Plotting change in endophyte prevalence within the populations by water treatment
 
-ggplot(bayes.endo.prev, aes(order, order))+
+endo.all.plot<-ggplot(bayes.endo.prev, aes(order, order))+
   geom_point(data = AGHY.plots.all, aes(prob_t, prob_t1)) +
   geom_line(data = bayes.endo.prev, aes(order, y = mean), size =1) + 
   geom_ribbon(data = bayes.endo.prev, aes(order, ymin=low, ymax= high),alpha=0.3) +
