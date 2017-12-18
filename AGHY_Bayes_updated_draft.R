@@ -739,7 +739,9 @@ ggplot(bayes.endo.prev, aes(order, order))+
   geom_point(data = AGHY.plots.all, aes(prob_t, prob_t1)) +
   geom_line(data = bayes.endo.prev, aes(order, y = mean)) + 
   geom_ribbon(data = bayes.endo.prev, aes(order, ymin=low, ymax= high),alpha=0.3) +
-  facet_grid(water~yr_t1) 
+  facet_grid(water~yr_t1) +
+  labs(x = "Endophyte prevalence in year t", y = "Endophyte prevalence in year t+1") 
+
 
 
 
