@@ -30,6 +30,12 @@ source("C:/Users/Marion Donald/Dropbox/Rice/Projects/AGHY/AGHY_SFAEF_Project/AGH
 All analyses were done in R [@R2017]
 
 
+### Equilibrium Endophyte Prevalence at the Population-Level
+```{r prevalence}
+endo.all.plot
+```
+
+
 ### Survival 
 Survival probability estimates for recruits that germinated in 2014 and survived until 2015 (2015 survival) and recruits that germinated in 2015 and survived until 2016 (2016 survival). Colors represent ambient rainfall and irrigated environmental contexts. Means and credible intervals shown by error bars. 
 
@@ -37,6 +43,7 @@ Survival probability estimates for recruits that germinated in 2014 and survived
 s.all.plot
 ```
 
+\newpage
 ### Flowering 
 Flowering probability estimates for recruits that in 2014, 2015, and 2016. Colors represent ambient rainfall and irrigated environmental contexts. Means and credible intervals shown by error bars. 
 
