@@ -1,9 +1,12 @@
 ## Authors: Marion and Tom
 ## Purpose: Bayesian analysis of endophyte prevalence and individual-level vital rates
 ## Uses data imported and 'cleaned' in AGHY_data_manipulation.R
-## Last update: 18 December 2017
+## Last update: 18 December 2017 
 # Last update notes:  still working on combining the linear regression of seed mass to seed count to the seed mass data to turn it into seed numbers for recruitment estimates
 ######################################################
+
+## testing to see if you can clone and then push back to github
+
 
 ## Required packages
 library(R2jags)
