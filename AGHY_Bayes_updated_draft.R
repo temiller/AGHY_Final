@@ -7,6 +7,7 @@
 
 ## testing to see if you can clone and then push back to github
 
+## Tom is testing out git.
 
 ## Required packages
 library(R2jags)
