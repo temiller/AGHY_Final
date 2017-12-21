@@ -59,7 +59,7 @@ bag2012<-bag[bag$year=="2012" & bag$status!="mix",]
 bag2012.AJB <-ddply(bag2012, .(spp, time, status), summarize, seeds =sum(seeds), 
 		actual_seed =sum(actual_seed), gathered=sum(gathered), checked=sum(checked), 
 		dead_adjusted=sum(dead_adjusted) )	
-bag2012.AJB
+head(bag2012.AJB)
 #############################################	
 	
 ```
@@ -67,8 +67,97 @@ bag2012.AJB
 At this point I am not clear on what these quantities mean, ie what is 'seeds','actual_seeds','gathered', etc. I will need to ask Andrew and/or read metadata and/or figure it out from context below. I am going to further subset the 'bag' data to only include AGHY, and will apply similar subsets to the data below. I am also going to translate the ddply operations to 'modern' tidyverse.
 ```{r,echo=T,eval=T}
 bag2012.TEX <- bag2012 %>% 
-  group_by(spp,time,status) %>%
-  summarise(mean(seeds))
-bag2012.TEX
+  filter(spp=="AGHY") %>%
+  group_by(time,status) %>%
+  summarise(mean(seeds), actual_seed =sum(actual_seed), gathered=sum(gathered), checked=sum(checked), 
+		dead_adjusted=sum(dead_adjusted))
+head(bag2012.TEX)
 ```
-This (my conversion to pipes in bag2012) is not working and I am not sure why, but I am moving on for now. 
+
+Moving on to next data sources.
+```{r data source 2,echo=T}
+###############################################
+##############  Data source 2 #####################
+##################################################
+# Reading in seed stock data
+stock<-read.csv("C:\\Users\\tm9\\Dropbox\\SeedBankBayesStats (1)\\UpdatedBayesStats\\Filledbagt0Data.csv")
+stock$year<-as.factor(stock$year)
+
+# Taking only 2012 seed data, no mix, and subset to AGHY
+stock2012<-stock[stock$year=="2012" & stock$spp=="AGHY",]
+```
+
+There is a cryptic note in data source 3 about alternative data sets that do or do not include extra scores for AGHY, which apparently influence infection frequency. Need to look into this. The name of the file used in the most up to date script suggests that it includes the extra scores. WHen I tried to read in InfectSurvDataUpdated.csv I get an error, presumably this file is not in the "updated" folder. Moving forward assuming this is ok but should double check with AJB.
+```{r data source 3,echo=T}
+####################################################################
+# Data source 3: Ep Bank Survival & Vertical Transmission Rate #####
+#####################################################################
+# This is the raw data for seed scoring: Infection frequencies and survival
+obs.surv<-read.csv("C:\\Users\\tm9\\Dropbox\\SeedBankBayesStats (1)\\UpdatedBayesStats\\InfectSurvDataUpdatedExtraScores.csv")
+#obs.surv<-read.csv("InfectSurvDataUpdated.csv", header=T, sep=",")
+# The hashed out csv has data for extra enodphyte scores for AGHY(boost infection frequency for AGHY)
+# Not using right now
+obs.surv$year<-as.factor(obs.surv$year)
+
+epviab.df.AJB<- ddply(obs.surv[obs.surv$endo==1 & obs.surv$traynumber !="extra",], .(species, generation), summarize, average=(sum(viability_full)/length(viability_full)), ss=length(viability_full))
+
+emviab.df.AJB<-ddply(obs.surv[obs.surv$endo==0  & obs.surv$traynumber !="extra",], .(species, generation), summarize, average=(sum(viability_full)/length(viability_full)), ss=length(viability_full))
+
+```
+Again, I am going to convert the ddply operations to tidyverse. I am also collapsing the two df's into one. Will probably need to modify code downstream.
+```{r,echo=T}
+viab.df.TEX<-obs.surv%>%
+  filter(species=="AGHY",endo==1,traynumber!="extra")%>%
+  group_by(generation,as.factor(endo))%>%
+  summarise(average=(sum(viability_full)/length(viability_full)), 
+            ss=length(viability_full))
+
+head(viab.df.TEX)
+```
+Next, germination data.
+```{r data source 4, echo=T}
+###############################################
+##############  Data source 4: Germination Trials
+##################################################
+germ <-read.csv("C:\\Users\\tm9\\Dropbox\\SeedBankBayesStats (1)\\UpdatedBayesStats\\GermData.csv")
+##TEX:not sure why these steps from AJB:
+germ$count<-rep(1, nrow(germ))
+germ $months<-rep(NA, nrow(germ))
+
+# Doing this to compress data
+germ.AJB<-ddply(germ, .(plottype, species, year, gen), summarize, seeded=sum(seeded), germtotal=sum(germtotal), othertotal=sum(othertotal), controltotal=sum(germ_adj_control), ss=sum(count), germ.hat=germtotal/seeded, bank.hat=(1-germ.hat))
+
+```
+And Tom's tidyverse conversion.
+```{r,echo=T}
+germ.TEX<-germ%>%
+  filter(species=="AGHY")%>%
+  group_by(plottype, year, gen)%>%
+  summarize(seeded=sum(seeded), germtotal=sum(germtotal),
+            othertotal=sum(othertotal),
+            controltotal=sum(germ_adj_control), 
+            ss=sum(count), germ.hat=germtotal/seeded,
+            bank.hat=(1-germ.hat))
+head(germ.TEX)
+```
+Last piece we will need.
+```{r data source 5, echo=T}
+###############################################
+##############  Data source 5: Retention Data
+##################################################
+ret.data<-read.csv("C:\\Users\\tm9\\Dropbox\\SeedBankBayesStats (1)\\UpdatedBayesStats\\Testing.csv")
+ret.data<-ret.data[ret.data$species=="AGHY",]
+#read.csv("RetData.csv", sep=",", header=T)
+
+# Checking how much data there actually is
+#
+ddply(ret.data[ret.data$group == "plus",], .(generation), summarize, total=length(endo), endo=sum(endo), ret.hat= endo/total)
+
+ret.data%>%
+  filter(group=="plus")%>%
+  group_by(generation)%>%
+  summarize(total=length(endo), 
+            endo=sum(endo), 
+            ret.hat= endo/total)
+```
+
