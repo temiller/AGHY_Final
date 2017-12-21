@@ -1,0 +1,23 @@
+---
+title: "AGHY Bayes model methods"
+author: "Tom Miller and Marion Donald"
+date: "December 20, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Overview
+These are notes and methods from Tom and Marion's "AGHY day" on December 21, 2017, with the goal of completing and finalizing parameter estimation for the AGHY vital rates, including effects of symbiosis and precipitation treatment. We recently decided, full the sake of maximum rigor and novelty, to build a population model from the vital rate data and to incorporate seed bank dynamics into the model, using Andrew Bibian's ms data. The resulting manuscript would emphasize the careful examination of context dependent symbiont effects on hosts throughout the life cycle, including rarely studied "storage" stages, and would connect the individual-level processes to population-level patterns of symbiont prevalence. We can not only use the model to explore prevalence patterns, but we can also test model predictions because we have direct observations of how prevalence changed. 
+
+Here is the full population model that we walked through:
+$$\mathbf{A}=\begin{bmatrix} 
+0 & r^{-}(1-g_0^{-}) & 0 & r^{+}(1-\tau)(1-g_0^{+})\\
+d^{-}g_1^{-} & r^{-}g_0^{-}+s^{-} & s^{+}g_1^{+}(1-\phi) & r^{+}(1-\tau)g_0^{+}+s^{+}(1-\rho)\\
+0 & 0 & 0 & r^{+}\tau(1-g_0^{+})\\
+0 & 0 & s^{+}g_1^{+}\phi & r^{+}\tau g_0^{+}+s^{+}\rho\\
+\end{bmatrix}$$
+
+The population vector is E- seed bank, E- above-ground plants, E+ seed bank, E+ above ground plants. The vital rates are: seed production per plant ($\mathit{r}$), annual survival of a seed in the seed bank ($\mathit{d}$) or an above-ground plant ($\mathit{s}$), and germination of a 0-yo seed ($\mathit{g_0}$) or a 1-yo seed ($\mathit{g_1}$). The symbiont loss parameters are given by greek symbols: vertical transmission ($\mathit{\tau}$), symbiont retention in surviving plants ($\mathit{\rho}$), and symbiont survival in the seed bank ($\mathit{\phi}$). 
