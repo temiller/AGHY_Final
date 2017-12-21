@@ -373,9 +373,150 @@ AGHY.demo.final.final = rbind(AGHY.demo.semi.final,endo.stat.na) ## rbind the th
 ## rename the AGHY.demo.final.final to AGHY.demo.final so that we don't have to adjust the later code that calls on AGHY.demo.final
 AGHY.demo.final = AGHY.demo.final.final
 
+
+
+#################################################################################################################
+######## Seed Production Data Manipulation ######################################################################
+######## Want: grand average of # seeds produced per plant by E+ and E- plants in water control and water addition plots
+######## Action: Multipy these means by the # of E+ and E- plants in each plot to get the total amount of seeds produced in each plot
+
+## need to take the seed_mass_t (from 2013) sum it by endo stat and water add vs control and divide by the total number of infs that contributed
+### this gives the seed mass per inf 
+## need to add in the water control and addition info to the AGHY.plants dataframe
+AGHY.plants.water<-merge(AGHY.plots, AGHY.plants, all =T)
+AGHY.plants.water<-subset(AGHY.plants.water, newplot >0 )
+
+## remove the plants that we know are dead (there are 5 of the demo plants)
+## **** MIGHT BE AN ISSUE THAT WE ONLY KNOW SURVIVAL STATUS FOR THE ORIG PLANTS THAT WERE DEMO INDIVIDUALS (HALF THE PLANTS.....)
+## THIS ANALYSIS PROCEEDS AS IF ALL OF THE NON-DEMO PLANTS THAT WE DON'T KNOW SURVIVAL FOR ARE ALIVE.... MAY NEED TO CHANGE THIS 
+dead.orig<- which(with(AGHY.plants.water, survival_t == 0)) ## indentify the dead original plants
+AGHY.plants.water <- AGHY.plants.water[-dead.orig, ] ## remove them from the data frame 
+
+seed.mass<-subset(AGHY.plants.water, seed_mass_t >0 & demo_plant ==1) # select out the plants that have seed masses
+
+## calculate the average seed mass produced per plant by E+ and E- plants in Water Control and Water Addition plots 
+seed.mass.avg<-ddply(seed.mass, c("endo", "water"), plyr:: summarize, 
+                     num.infs = sum(inf_collected_t), # total infs collected for E+ and E- plants in water Control and Water Addition 
+                     seed.mass = sum(seed_mass_t), # total seed mass for E+ and E- plants in Water Control and Water Addition
+                     mass.inf = seed.mass/num.infs, # avg seed mass per inf for E+ and E- plants in Water Control and Water Addition
+                     num.infs.plant = sum(inf_number_t), # total number of infs per plant for E+ and E- plants in Water Control and Water Addition
+                     avg.mass.plant = mass.inf * num.infs.plant) # average seed mass per plant for E+ and E- plants in Water Control and Water Addition
+
+## get the total number of E+ and E- plants in each plot
+
+plants.endo<- ddply(AGHY.plants.water, c("endo", "water", "newplot"), plyr::summarize,
+                    num.plants = length(ID))
+
+seed.mass.plant<-merge(plants.endo, seed.mass.avg, all = T)
+seed.mass.plant$seeds.plot<-seed.mass.plant$num.plants * seed.mass.plant$avg.mass.plant
+
+##trash
+hist(log(AGHY.plants.water$seed_mass_t[AGHY.plants.water$year_t==2013]))
+
+## then want to scale this number (specific for E+ and E- plants in each plot) back down to the subplot level so that we can use it in the recruitment analysis with plot as a random effect
+## gives contribution of seed mass by E+ and E- plants at the subplot level -- assumes equal seed rain into each of the subplots from the plants in the plot 
+seed.mass.plant$seed.mass.sbplt<- seed.mass.plant$seeds.plot / 64 # 64 subplots per plot
+
+## cut out the newplot and subplot data from original data frame and merge this seed mass subplot back in, so that we have the right length dataframe to loop over for the 2014 recruitment analysis
+
+
+subplots.2013<-ddply(AGHY.demo.final, c("newplot","subplot","year"), plyr :: summarize,
+                     plants = length(ID))
+
+subplots.2013<-subset(subplots.2013, year == 2014)
+
+orig.2013.seeds.sbplts<- merge(subplots.2013, seed.mass.plant) ## dataframe with plot and subplot attached to seed mass per subplot + endo status of parent plant contributing the seeds 
+
+## for the linear regression dataframe, change the water status from 0 and 1 to control and add to match with the others 
+
+AGHY.seed.mass.count$water<-AGHY.seed.mass.count$Status
+
+AGHY.seed.mass.count$water[AGHY.seed.mass.count$water ==1]<- "Add"
+AGHY.seed.mass.count$water[AGHY.seed.mass.count$water ==0]<- "Control"
+AGHY.seed.mass.count$water<-as.factor(AGHY.seed.mass.count$water)
+
+
+
+## Get the numbers of E+ and E- original plants that were alive in 2014 -- able to contibute to seed production in the plots
+orig.plants.alive.14 <- subset( AGHY.plants.water, survival_t1 == 1) ## first get all the original plants that were still alive in 2014
+
+## get the number of E+ and E- orig plants still alive in each plot 
+orig.plants.endo.14 <- ddply(orig.plants.alive.14, c("endo", "water", "newplot"), plyr::summarize,
+                             num.plants = length(ID))
+
+## combine seed mass specific for endo and water to each of these plots in 2014 -- ORIGINAL PLANTS
+
+seed.mass.plant.14<- merge(orig.plants.endo.14, seed.mass.avg)
+seed.mass.plant.14$seeds.plot.14 <- seed.mass.plant.14$num.plants * seed.mass.plant.14$avg.mass.plant ## mass of seeds contributed by E+ and E- plants to each plot
+
+
+## Seed production in 2014 and 2015
+## number of flowering recruits in each subplot -- want this at the subplot level so that we can include a plot random effect
+## first remove subplots that we don't have any data from -- sometimes we skipped if there were fire ants covering them
+spring.fl.rec<- AGHY.demo.final[!is.na(AGHY.demo.final$spring_flowering_recruit_count_per_subplot),]
+
+spring.flowering.recruits.sbplts<-ddply(spring.fl.rec, c("newplot", "subplot", "year_t"), plyr :: summarize,
+                                        total.flowering.sbplt = sum(spring_flowering_recruit_count_per_subplot))
+
+
+
+## avg number of seeds produced by E+ and E- recruits in each subplot (separate for water addition and water control)
+seed.mass.recruits.demo<-subset(AGHY.demo.final,  endo.stat == 1 | endo.stat == 0)
+seed.mass.recruits.demo<-subset(seed.mass.recruits.demo, seed_mass_t > 0)
+
+## get the mass of E+ and E- seeds for water A and C plots from the demography recruits in the 3 subplots 
+seed.mass.recruits.plot<-ddply(seed.mass.recruits.demo, c("newplot", "subplot","year_t", "water", "endo.stat"), plyr :: summarize,
+                               num.infs.coll = sum(inf_collected_t), # number of infs collected for E+ and E- recruits in water addition and water control 
+                               seed.mass = sum(seed_mass_t), # total seed mass for E+ and E- recruits in water A and C plots
+                               mass.inf = seed.mass/num.infs.coll,
+                               num.infs = sum(inf_number_t), # number of infs per plot (based on the 3 subplots
+                               num.plants = length(ID),
+                               avg.mass.plant = mass.inf * num.infs/num.plants)
+
+## get the total number of demo plants in each of the three subplots
+demo.sbplt.total<-ddply(seed.mass.recruits.plot, c("newplot","subplot", "year_t"), plyr :: summarize,
+                        total.plants = sum(num.plants))
+
+smf<-merge(seed.mass.recruits.plot, spring.flowering.recruits.sbplts) 
+
+seed.mass.flowering<-merge(smf, demo.sbplt.total)
+
+seed.mass.flowering$prop.total<- seed.mass.flowering$num.plants/seed.mass.flowering$total.plants ## get the proportion of E+ and E- demo plants
+
+seed.mass.flowering$endo.plant.sbplt<- seed.mass.flowering$prop.total * seed.mass.flowering$total.flowering.sbplt ## get the total number of E+ and E- plants in each subplot
+
+seed.mass.flowering$seed.mass.endo.sbplt<- seed.mass.flowering$endo.plant.sbplt * seed.mass.flowering$avg.mass.plant ## the avg. mass of endo specific seeds per subplot
+## stopping here because we want to do the anaysis at the subplot level 
+#seed.mass.flowering$avg.endo.seed.mass.plot <- seed.mass.flowering$avg.seed.mass.endo.sbplt * 64 ## the estimated number of endo specific seeds from recruits per plot
+
+
+######################################################################################################################
+######################################################################################################################
+## 2014 RECRUITMENT DATA
+
+
+AGHY.merge$total_spring_recruits_subplot <- AGHY.merge$spring_vegetative_recruit_count_per_subplot + AGHY.merge$spring_flowering_recruit_count_per_subplot
+
+
+AGHY.merge$water<-as.factor(AGHY.merge$water)
+
+AGHY.merge$water<-as.integer(AGHY.merge$water) ## change to 1 and 2 for indexing water in the bayes model 
+
+## only need to do this once, but re-run if data manipulation gets updated (7/26/17)
+#save.image("C:/Users/tm9/Dropbox/AGHY_SFAEF_Project/AGHY analysis summer2017/AGHY_data_clean1.RData") 
+save.image("C:/Users/Marion Donald/Dropbox/Rice/Projects/AGHY/AGHY_SFAEF_Project/AGHY analysis summer2017/AGHY_Final/AGHY_data_clean.1.RData") ## Marion's computer
+
+alive.14.orig<-ddply(seed.mass.plant.14, "newplot", plyr:: summarize,
+                     total_plants = sum(num.plants),
+                     prop.alive = total_plants/20,
+                     prop.dead = 1-prop.alive)
+
+alive.14.orig.40<-subset(alive.14.orig, prop.alive > .4)
+
+
 ## only need to do this once, but re-run if data manipulation gets updated (6/30/17)
-save.image("C:/Users/tm9/Dropbox/AGHY_SFAEF_Project/AGHY analysis summer2017/AGHY_data_clean.RData") 
+#save.image("C:/Users/tm9/Dropbox/AGHY_SFAEF_Project/AGHY analysis summer2017/AGHY_data_clean.RData") 
 #save.image("C:/Users/Marion Donald/Dropbox/Rice/Projects/AGHY/AGHY_SFAEF_Project/AGHY analysis summer2017/AGHY_data_clean.1.RData") ## Marion's computer
 
 ## (re-ran - but didn't change the script 12/18/17)
-save.image("C:/Users/Marion Donald/Dropbox/Rice/Projects/AGHY/AGHY_SFAEF_Project/AGHY analysis summer2017/AGHY_Final/AGHY_data_clean.Dec18.RData")
+#save.image("C:/Users/Marion Donald/Dropbox/Rice/Projects/AGHY/AGHY_SFAEF_Project/AGHY analysis summer2017/AGHY_Final/AGHY_data_clean.Dec18.RData")

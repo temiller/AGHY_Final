@@ -6,7 +6,7 @@
 ######################################################
 
 ## testing to see if you can clone and then push back to github
-## Now Tom is testing to see if he can push to git from his laptop.
+
 
 ## Required packages
 library(R2jags)
