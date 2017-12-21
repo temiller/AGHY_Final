@@ -1,0 +1,29 @@
+---
+title: "AGHY Bayes model methods"
+author: "Tom"
+date: "December 20, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+Testing whether I can use latex. $\alpha + 4$ should show up in line but
+$$\alpha + 4$$ should be offset. 
+This is amazing! But I need to ask Marion why this file does not show up in my github. I am able to push it, but I don't know where it goes.
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
