@@ -7,6 +7,22 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(R2jags)
+library(plyr)
+library(tidyverse)
+library(mcmcplots)
+library(gridExtra)
+library(grid)
+library(xlsx)
+library(lme4)
+
+#### Functions ########
+Mode <- function(x) {
+     ux <- unique(x)
+     ux[which.max(tabulate(match(x, ux)))]
+}
+
+invlogit<-function(x){exp(x)/(1+exp(x))}
 ```
 
 ## Overview
@@ -20,4 +36,39 @@ d^{-}g_1^{-} & r^{-}g_0^{-}+s^{-} & s^{+}g_1^{+}(1-\phi) & r^{+}(1-\tau)g_0^{+}+
 0 & 0 & s^{+}g_1^{+}\phi & r^{+}\tau g_0^{+}+s^{+}\rho\\
 \end{bmatrix}$$
 
-The population vector is E- seed bank, E- above-ground plants, E+ seed bank, E+ above ground plants. The vital rates are: seed production per plant ($\mathit{r}$), annual survival of a seed in the seed bank ($\mathit{d}$) or an above-ground plant ($\mathit{s}$), and germination of a 0-yo seed ($\mathit{g_0}$) or a 1-yo seed ($\mathit{g_1}$). The symbiont loss parameters are given by greek symbols: vertical transmission ($\mathit{\tau}$), symbiont retention in surviving plants ($\mathit{\rho}$), and symbiont survival in the seed bank ($\mathit{\phi}$). We assume
+The population vector is E- seed bank, E- above-ground plants, E+ seed bank, E+ above ground plants. The vital rates are: seed production per plant ($\mathit{r}$), annual survival of a seed in the seed bank ($\mathit{d}$) or an above-ground plant ($\mathit{s}$), and germination of a 0-yo seed ($\mathit{g_0}$) or a 1-yo seed ($\mathit{g_1}$). Each of these can differ between E+ and E- plants (indicated ). The symbiont loss parameters are given by greek symbols: vertical transmission ($\mathit{\tau}$), symbiont retention in surviving plants ($\mathit{\rho}$), and symbiont survival in the seed bank ($\mathit{\phi}$). We assume that horizontal transmission never occurs, and that seeds cannot remain in the seed bank for more than one year (the bank-to-bank transition is zero). We could relax either or both of these assumptions later. We know that horizontal transmission did not occur (we have numbers for this) but the longevity of the seed bank is more of a guess. 
+
+Marion is working on estimating the above-ground parameters in a Bayesian framework using data from the Nacogdoches plots. My job is to estimate the seed bank parameters $\mathit{d}$, $\mathit{g_1}$, and $\mathit{\phi}$. Note that $\mathit{g_0}$ is a seed process (probability that a 0-yo seed recruits as a plant) but this will come from Marion's data where we can include precipitation treatment effects. We cannot include precip. effects in the other seed bank parameters because Andrew's experiment did not include this manipulation; we will therefore assume $\mathit{d}$, $\mathit{g_1}$, and $\mathit{\phi}$ do not depend on precipitation. 
+
+### Seed bank parameter estimation
+Now for the hard part: trying to re-create Andrew's analyses from 2015. Here I am going to be relying heavily on Andrew's script 'SeedBankPopModelAGHYFinal.R', which I located in the Dropbox folder 'SeedBankBayesStats (1)/UpdatedBayesStates'. This script is time-stamped 4/29/2105, probably just before his defense. It is well commented and appears to be the most mature version of the seed bank analyses, and it corresponds well to what's in his final thesis. We need to confirm with AJB that this script is the right one to use, and I will be vetting the code below to the best of my ability. Most of the R chunks below are pasted directly from this script, and I will trim these of scraps and modify as needed.
+
+```{r data source 1, echo=T}
+###############################################
+##############  Data source 1 #####################
+##################################################
+## Reading in Bag Data
+bag<-read.csv("C:\\Users\\tm9\\Dropbox\\SeedBankBayesStats (1)\\UpdatedBayesStats\\FilledBagBankDataUse.csv")
+bag<-bag[c(which(bag$checked>=0)),]
+bag$year<-as.factor(bag$year)
+
+# Making 2012 Data for only plus & minus seed types
+bag2012<-bag[bag$year=="2012" & bag$status!="mix",]
+
+# Doing this for compressing data 
+bag2012.AJB <-ddply(bag2012, .(spp, time, status), summarize, seeds =sum(seeds), 
+		actual_seed =sum(actual_seed), gathered=sum(gathered), checked=sum(checked), 
+		dead_adjusted=sum(dead_adjusted) )	
+bag2012.AJB
+#############################################	
+	
+```
+
+At this point I am not clear on what these quantities mean, ie what is 'seeds','actual_seeds','gathered', etc. I will need to ask Andrew and/or read metadata and/or figure it out from context below. I am going to further subset the 'bag' data to only include AGHY, and will apply similar subsets to the data below. I am also going to translate the ddply operations to 'modern' tidyverse.
+```{r,echo=T,eval=T}
+bag2012.TEX <- bag2012 %>% 
+  group_by(spp,time,status) %>%
+  summarise(mean(seeds))
+bag2012.TEX
+```
+This (my conversion to pipes in bag2012) is not working and I am not sure why, but I am moving on for now. 
