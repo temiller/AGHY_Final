@@ -110,11 +110,29 @@ ggplot(prev_final,aes(x=year,y=mean.prev,color=water,group=newplot))+
 
 
 
+```{r}
+
+ggplot(prev_final,aes(x=year,y=mean.prev,color=water,group=newplot))+
+  geom_line()+
+  geom_linerange(aes(x=year,ymin=low.CI,ymax=high.CI,color=water),position=position_dodge(0.3))+
+  geom_point(aes(x=year,y=mean.prev,color=water),position=position_dodge(0.3))+
+  facet_grid(water~target_init_freq)+
+  theme_bw()
+  
+```
+
+And finally let's look at the 2013/2016 prevalence change 
 
 
-
-
-
+```{r}
+prev_final%>%
+filter(year==2016)%>%
+  ggplot()+
+  geom_point(aes(x=(target_init_freq),y=mean.prev,color=water,size=2),position=position_dodge(0.025))+
+  geom_linerange(aes(x=(target_init_freq),ymin=low.CI,ymax=high.CI,color=water),position=position_dodge(0.025))+
+  geom_segment(aes(x=0,xend=1,y=0,yend=1))+
+  theme_bw()
+```
 
 
 
