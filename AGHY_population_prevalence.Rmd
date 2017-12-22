@@ -1,0 +1,18 @@
+---
+title: "AGHY population prevalence analysis"
+author: "Tom Miller"
+date: "December 22, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Purpose
+I am interested to look at the prevelance dynamics a little differently than we have in the past. I have some ideas for new ways to visualize the data that I would like to try. This file does not do any new computations or model fitting, just runs with the Bayesian fits that we have already completed and saved. Starting with a load of the RData file that includes the most recent fit of the big model. This is is the Dropbox but not on git.
+
+```{r load Bayesian output, echo=T}
+load("C:/Users/tm9/Dropbox/AGHY_SFAEF_Project/AGHY analysis summer2017/AGHY_Final/AGHY_Bayes.RData")
+```
+
