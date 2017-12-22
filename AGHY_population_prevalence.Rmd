@@ -7,6 +7,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
 ```
 
 #Purpose
@@ -15,4 +16,112 @@ I am interested to look at the prevelance dynamics a little differently than we 
 ```{r load Bayesian output, echo=T}
 load("C:/Users/tm9/Dropbox/AGHY_SFAEF_Project/AGHY analysis summer2017/AGHY_Final/AGHY_Bayes.RData")
 ```
+
+Here is Marion's lovely combo plot of the inter-annual changes. 
+```{r}
+ggplot(bayes.endo.prev, aes(order, order))+
+  geom_point(data = AGHY.plots.all, aes(prob_t, prob_t1)) +
+  geom_line(data = bayes.endo.prev, aes(order, y = mean), size =1) + 
+  geom_ribbon(data = bayes.endo.prev, aes(order, ymin=low, ymax= high),alpha=0.3) +
+  facet_grid(transition~treatment) +
+  labs(x = "Endophyte prevalence in year t", y = "Endophyte prevalence in year t+1") 
+```
+I would like to plot the full time series of prevalence by plot, grouped into initial prevalence categories. The Bayes output should have the mean and CI prevalence for each plot by year. Get this into a format that works for me. 
+
+```{r warngle bayes output}
+
+## here is the full set of posterior values (rows) by plot (columns) in 2014
+hold_2014<-as.data.frame(AGHY.endochange.out$BUGSoutput$sims.list$p.14)
+#dim(hold_2014)
+colnames(hold_2014)<-unique(y.14.plot)
+prev_2014<-hold_2014%>%
+  gather(colnames(hold_2014),key="plot",value="prevalence")%>%
+  group_by(plot)%>%
+  summarize(mean.prev = mean(prevalence),
+            low.CI = quantile(prevalence,probs=0.05),
+            high.CI = quantile(prevalence,probs=0.95))%>%
+  mutate(year=2014,newplot = as.numeric(plot))
+
+
+## same for 2015
+hold_2015<-as.data.frame(AGHY.endochange.out$BUGSoutput$sims.list$p.15)
+#dim(hold_2015)
+colnames(hold_2015)<-unique(y.15.plot)
+prev_2015<-hold_2015%>%
+  gather(colnames(hold_2015),key="plot",value="prevalence")%>%
+  group_by(plot)%>%
+  summarize(mean.prev = mean(prevalence),
+            low.CI = quantile(prevalence,probs=0.05),
+            high.CI = quantile(prevalence,probs=0.95))%>%
+  mutate(year=2015,newplot = as.numeric(plot))
+
+## same for 2016
+hold_2016<-as.data.frame(AGHY.endochange.out$BUGSoutput$sims.list$p.16)
+#dim(hold_2016)
+colnames(hold_2016)<-unique(y.16.plot)
+prev_2016<-hold_2016%>%
+  gather(colnames(hold_2016),key="plot",value="prevalence")%>%
+  group_by(plot)%>%
+  summarize(mean.prev = mean(prevalence),
+            low.CI = quantile(prevalence,probs=0.05),
+            high.CI = quantile(prevalence,probs=0.95))%>%
+  mutate(year=2016,newplot = as.numeric(plot))
+
+## tie it all together (there was probably a better way to do this)
+prev_allyears <- bind_rows(prev_2014,prev_2015,prev_2016)
+##lastly, merge in plot treatment info
+#str(AGHY.plots)
+
+plot_dat <- AGHY.plots%>%
+  select(newplot,
+         mean.prev=target_init_freq)%>%
+  mutate(year = 2013)
+
+prev_final <- bind_rows(prev_allyears,plot_dat)%>%
+  left_join(.,AGHY.plots[,c("newplot","water","target_init_freq")],by="newplot")
+
+```
+
+
+Now here is the plot I am after.
+
+```{r sweet ggplot, echo=T}
+
+arrange(prev_final,year)%>%
+ggplot()+
+  geom_point(aes(x=year,y=mean.prev,color=water))+
+  geom_linerange(aes(x=year,ymin=low.CI,ymax=high.CI))+
+  facet_grid(water~target_init_freq)+
+  theme_bw()
+
+```
+
+
+```{r}
+
+ggplot(prev_final,aes(x=year,y=mean.prev,color=water,group=newplot))+
+  geom_line()+
+  geom_linerange(aes(x=year,ymin=low.CI,ymax=high.CI,color=water))+
+  geom_point(aes(x=year,y=mean.prev,color=water))+
+  facet_grid(.~target_init_freq)+
+  theme_bw()
+  
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
