@@ -78,37 +78,12 @@ plot_dat <- AGHY.plots%>%
   mutate(year = 2013)
 
 prev_final <- bind_rows(prev_allyears,plot_dat)%>%
-  left_join(.,AGHY.plots[,c("newplot","water","target_init_freq")],by="newplot")
+  left_join(.,AGHY.plots[,c("newplot","water","transmission","target_init_freq")],by="newplot")
 
 ```
 
 
 Now here is the plot I am after.
-
-```{r sweet ggplot, echo=T}
-
-arrange(prev_final,year)%>%
-ggplot()+
-  geom_point(aes(x=year,y=mean.prev,color=water))+
-  geom_linerange(aes(x=year,ymin=low.CI,ymax=high.CI))+
-  facet_grid(water~target_init_freq)+
-  theme_bw()
-
-```
-
-
-```{r}
-
-ggplot(prev_final,aes(x=year,y=mean.prev,color=water,group=newplot))+
-  geom_line()+
-  geom_linerange(aes(x=year,ymin=low.CI,ymax=high.CI,color=water))+
-  geom_point(aes(x=year,y=mean.prev,color=water))+
-  facet_grid(.~target_init_freq)+
-  theme_bw()
-  
-```
-
-
 
 ```{r}
 
@@ -120,26 +95,94 @@ ggplot(prev_final,aes(x=year,y=mean.prev,color=water,group=newplot))+
   theme_bw()
   
 ```
-
-And finally let's look at the 2013/2016 prevalence change 
-
+I am concerned about combining transmission control and reduction plots in 2013/14. We suspected the trans reduction did not work effectively (because many of the infs that were transferred were empty) but let's see what it looks like. 
 
 ```{r}
+
+ggplot(prev_final,aes(x=year,y=mean.prev,group=newplot))+
+  geom_line()+
+  geom_linerange(aes(x=year,ymin=low.CI,ymax=high.CI),position=position_dodge(0.3))+
+  geom_point(aes(x=year,y=mean.prev,color=transmission,size=1.5),position=position_dodge(0.3))+
+  facet_grid(water~target_init_freq)+
+  theme_bw()
+  
+```
+Ugh, looks like transmission reduction had an effect. especially from high initial prevalence. Here is what it looks like with only transmission control plots.
+
+```{r}
+
 prev_final%>%
-filter(year==2016)%>%
-  ggplot()+
-  geom_point(aes(x=(target_init_freq),y=mean.prev,color=water,size=2),position=position_dodge(0.025))+
-  geom_linerange(aes(x=(target_init_freq),ymin=low.CI,ymax=high.CI,color=water),position=position_dodge(0.025))+
-  geom_segment(aes(x=0,xend=1,y=0,yend=1))+
+  filter(transmission=="Control")%>%
+ggplot(aes(x=year,y=mean.prev,group=newplot))+
+  geom_line()+
+  geom_linerange(aes(x=year,ymin=low.CI,ymax=high.CI),position=position_dodge(0.3))+
+  geom_point(aes(x=year,y=mean.prev,color=water,size=1.5),position=position_dodge(0.3))+
+  facet_grid(water~target_init_freq)+
+  theme_bw()
+  
+```
+The decision we need to make is whether to drop transmission reduction plots entirely (from the pevalence change analysis; it should not influence vital rate esimation) or to use all plots but starting from 2014. I think the latter makes more sense, since we could argue that the first transition year was just meant to get the populations started. If I could do it over again I would have removed original plants after the first year. 
+
+Here I would like to look at overall prevalence change from 2014 to 2016.
+
+```{r}
+mean_prev<-prev_final%>%
+  mutate(year=paste('mean', year,sep="_"))%>%
+  select(newplot,water,transmission,mean.prev,year)%>%
+  spread(year,mean.prev)
+lowCI_prev<-prev_final%>%
+  mutate(year=paste('lowCI', year,sep="_"))%>%
+  select(newplot,low.CI,year)%>%
+  spread(year,low.CI)
+highCI_prev<-prev_final%>%
+  mutate(year=paste('highCI', year,sep="_"))%>%
+  select(newplot,high.CI,year)%>%
+  spread(year,high.CI)  
+
+prev_wide <- left_join(left_join(mean_prev,lowCI_prev,by="newplot"),highCI_prev,by="newplot")
+prev_wide
+
+```
+```{r}
+
+ggplot(prev_wide)+
+  geom_point(aes(x=mean_2014,y=mean_2015,color=transmission))+
+  geom_point(aes(x=mean_2015,y=mean_2016,color=transmission))+
+  geom_segment(aes(x=mean_2014,y=mean_2015,xend=mean_2015,yend=mean_2016,color=transmission),arrow=arrow(length=unit(0.25,"cm")))+
+  geom_segment(aes(0,0,xend=1,yend=1))+
+  facet_wrap(~water)+
+  theme_bw()
+
+```
+
+I am quite happy with this plot. I don't see any big transmission reduction effect from 2014 onward so I think it is fine to ignore this, in which case the final plot would look like.
+
+```{r}
+ggplot(prev_wide)+
+  geom_point(aes(x=mean_2014,y=mean_2015))+
+  geom_point(aes(x=mean_2015,y=mean_2016))+
+  geom_segment(aes(x=mean_2014,y=mean_2015,xend=mean_2015,yend=mean_2016),arrow=arrow(length=unit(0.25,"cm")))+
+  geom_segment(aes(0,0,xend=1,yend=1))+
+  facet_wrap(~water)+
   theme_bw()
 ```
 
+What if I added 2013/14 but dropped trans reduction plots?
 
+```{r}
+prev_wide%>%
+  mutate(mean_2013 = ifelse(transmission=="Reduce",NA,mean_2013))%>%
+  ggplot()+
+  geom_point(aes(x=mean_2013,y=mean_2014))+
+  geom_point(aes(x=mean_2014,y=mean_2015))+
+  geom_point(aes(x=mean_2015,y=mean_2016))+
+  geom_segment(aes(0,0,xend=1,yend=1))+
+  facet_wrap(~water)+
+  geom_segment(aes(x=mean_2013,y=mean_2014,xend=mean_2014,yend=mean_2015),arrow=arrow(length=unit(0.25,"cm")))+
+  geom_segment(aes(x=mean_2014,y=mean_2015,xend=mean_2015,yend=mean_2016),arrow=arrow(length=unit(0.25,"cm")))+
+  theme_bw()
 
+```
 
-
-
-
-
-
-
+This is cool. 
+What I would like to do next is to fit linear models for all transition years combined with trans reduction plots dropped for 2013 (as in this fig), and plot and year random effects.I will need to code this up in JAGS because we had been doing something a little different. Also note to self that I can approximate eqm prevalence as logit(y-hat) = a/(b-1).
