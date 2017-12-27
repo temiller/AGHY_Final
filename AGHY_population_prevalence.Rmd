@@ -208,7 +208,11 @@ cat("
     beta0.mean[i]~dnorm(0,0.001)   
     beta1.mean[i]~dnorm(0,0.001)   
     }
-    
+
+    ## coefficients for transmission reduction effect in 2013/14
+    beta0.transeffect~dnorm(0,0.001)
+    beta1.transeffect~dnorm(0,0.001)
+
     ## random intercepts for plots
     sigma0.plot~dunif(0,1000)
     sigma1.plot~dunif(0,1000)
@@ -234,7 +238,7 @@ cat("
     for(i in 1:N.plots){
       #this is the 2013/14 transition, which is special b/c starting prev is known
       #I will need to include trans reduce effects here (not yet)
-      logit(prev[i,1]) <- beta0.mean[water[i]] + ran.beta0.plot[plot[i]] + ran.beta0.year[year[1]] + (beta1.mean[water[i]] + ran.beta1.plot[plot[i]] + ran.beta1.year[year[1]]) * initial_prev[i]
+      logit(prev[i,1]) <- beta0.mean[water[i]] + beta0.transeffect*trans_reduce[i] + ran.beta0.plot[plot[i]] + ran.beta0.year[year[1]] + (beta1.mean[water[i]] + beta1.transeffect*trans_reduce[i] + ran.beta1.plot[plot[i]] + ran.beta1.year[year[1]]) * initial_prev[i]
 
       for(j in 2:N.years){
         logit(prev[i,j]) <- beta0.mean[water[i]] + ran.beta0.plot[plot[i]] +       ran.beta0.year[year[j]] + (beta1.mean[water[i]] + ran.beta1.plot[plot[i]] + ran.beta1.year[year[j]]) * prev[i,j-1]
@@ -274,7 +278,7 @@ Now let's make a nice and tidy data set to feed into the Bayes model. I am worki
 AGHY_subplot_dat <- AGHY.merge%>%
   select(newplot,year_t,subplot,water,transmission,target_init_freq,E_plus_liberal,total)%>% na.omit()%>%arrange(year_t,newplot,subplot)
 
-AGHY_plot_dat <- AGHY_dat%>%group_by(newplot)%>%summarize(water = unique(water), initial_prev = unique(target_init_freq))%>%arrange(newplot)
+AGHY_plot_dat <- AGHY_dat%>%group_by(newplot)%>%summarize(water = unique(water),transmission = unique(transmission), initial_prev = unique(target_init_freq))%>%mutate(trans_reduce = ifelse(transmission=="Reduce",1,0))%>%  arrange(newplot)
 
 ## bundle data
 
@@ -286,7 +290,9 @@ N.obs<-nrow(AGHY_subplot_dat)
 
 ## data - predictor variables at the plot level
 water<-AGHY_plot_dat$water
+trans_reduce<-AGHY_plot_dat$trans_reduce
 initial_prev<-AGHY_plot_dat$initial_prev
+
 ## data - response variable at subplot level
 y.pos<-AGHY_subplot_dat$E_plus_liberal
 N.samples<-AGHY_subplot_dat$total
