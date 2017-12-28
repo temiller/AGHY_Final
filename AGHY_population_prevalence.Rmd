@@ -189,7 +189,7 @@ prev_wide%>%
 ```
 
 This is cool. 
-What I would like to do next is to fit linear models for all transition years combined with trans reduction plots dropped for 2013 (as in this fig), and plot and year random effects.I will need to code this up in JAGS because we had been doing something a little different. Also note to self that I can approximate eqm prevalence as logit(y-hat) = a/(b-1).
+What I would like to do next is to fit linear models for all transition years combined with trans reduction plots dropped for 2013 (as in this fig), and plot and year random effects. I will need to code this up in JAGS because we had been doing something a little different. 
 
 Updating the AGHY prevalence Bayesian model:
 
@@ -247,12 +247,12 @@ cat("
 
     ## Likelihood - subplot-level estimation
     for(i in 1:N.obs){
-    y.pos[i]~dbinom(prev[plot[i],year[j]],N.samples[i])
+    y.pos[i]~dbinom(prev[plot[i],year[i]],N.samples[i])
 
     ## Computation of fit statistic (for Bayesian p-value)
-     Presi[i] <- abs(y.pos[i] - prev[plot[i],year[j]]*N.samples[i])
-     y.new[i] ~ dbinom(prev[plot[i],year[j]],N.samples[i])
-     Presi.new[i] <- abs(y.new[i] - prev[plot[i],year[j]]*N.samples[i])
+     Presi[i] <- abs(y.pos[i] - prev[plot[i],year[i]]*N.samples[i])
+     y.new[i] ~ dbinom(prev[plot[i],year[i]],N.samples[i])
+     Presi.new[i] <- abs(y.new[i] - prev[plot[i],year[i]]*N.samples[i])
     }
     
     ## Prediction
@@ -261,10 +261,14 @@ cat("
     logit(Eplus.control.pred[i])<-beta0.mean[2]+beta1.mean[2]*x.levels[i]
     }
 
+    ##Eqm prevalence
+    #for(i in 1:N.trt){
+    #logit(eqm.prev[i])<-beta0.mean[i]/(1-beta1.mean[i])
+    #}
+
     ## Posterior predictive check
     fit <- sum(Presi[]) # Discrepancy for actual data set
     fit.new <- sum(Presi.new[]) # Discrepancy for replicate data set
-
 
     }##end model
     ",fill=T)
@@ -299,6 +303,58 @@ N.samples<-AGHY_subplot_dat$total
 plot<-AGHY_subplot_dat$newplot
 year<-AGHY_subplot_dat$year_t
 
+## data for prediction
+x.levels<-seq(0,1,0.01)
+N.x.levels<-length(x.levels)
+
+```
+
+```{r}
+
+jag.data<-list(N.trt=N.trt,
+               N.years=N.years,
+               N.plots=N.plots,
+               N.obs=N.obs,
+               water=water,
+               trans_reduce=trans_reduce,
+               initial_prev=initial_prev,
+               y.pos=y.pos,
+               N.samples=N.samples,
+               plot=plot,
+               year=year,
+               x.levels=x.levels,
+               N.x.levels=N.x.levels)
+
+## Inits function
+inits<-function(){list(beta0.mean=rnorm(N.trt,0,2),
+                       beta1.mean=rnorm(N.trt,0,2),
+                       beta0.transeffect=rnorm(1,0,2),
+                       beta1.transeffect=rnorm(1,0,2),
+                       sigma0.plot=runif(1,0,10),
+                       sigma1.plot=runif(1,0,10),
+                       sigma0.year=runif(1,0,10),
+                       sigma1.year=runif(1,0,10))
+}
+
+## Params to estimate
+parameters<-c("beta0.mean","beta1.mean","beta0.transeffect","beta1.transeffect",
+              "sigma0.plot","sigma1.plot","sigma0.year","sigma1.year",
+              "prev","Eplus.add.pred","Eplus.control.pred","fit","fit.new")
+
+
+## MCMC settings
+ni<-10000
+nb<-2000
+nt<-5
+nc<-3
+
+## run JAGS
+AGHY.endochange.all.years<-jags(data=jag.data,inits=inits,parameters.to.save=parameters,
+                                model.file="AGHY_prevalence_all_years.txt",
+                                n.thin=nt,n.chains=nc,n.burnin=nb,
+                                n.iter=ni,working.directory=getwd())
+
+#mcmcplot(AGHY.endochange.out)
 
 ```
 
