@@ -224,24 +224,27 @@ cat("
     }
 
     ## random intercepts for years
-    sigma0.year~dunif(0,1000)
-    sigma1.year~dunif(0,1000)
-    tau.sigma0.year<-1/(sigma0.year*sigma0.year)
-    tau.sigma1.year<-1/(sigma1.year*sigma1.year)
-    for(i in 1:N.years){      
-    ran.beta0.year[i]~dnorm(0,tau.sigma0.year)
-    ran.beta1.year[i]~dnorm(0,tau.sigma1.year)
-    }
+    #sigma0.year~dunif(0,1000)
+    #sigma1.year~dunif(0,1000)
+    #tau.sigma0.year<-1/(sigma0.year*sigma0.year)
+    #tau.sigma1.year<-1/(sigma1.year*sigma1.year)
+    #for(i in 1:N.years){      
+    #ran.beta0.year[i]~dnorm(0,tau.sigma0.year)
+    #ran.beta1.year[i]~dnorm(0,tau.sigma1.year)
+    #}
 
     ## Likelihood - plot-level estimation
     ## create a matrix of endo prevalence by plot/year
     for(i in 1:N.plots){
       #this is the 2013/14 transition, which is special b/c starting prev is known
       #I will need to include trans reduce effects here (not yet)
-      logit(prev[i,1]) <- beta0.mean[water[i]] + beta0.transeffect*trans_reduce[i] + ran.beta0.plot[plot[i]] + ran.beta0.year[year[1]] + (beta1.mean[water[i]] + beta1.transeffect*trans_reduce[i] + ran.beta1.plot[plot[i]] + ran.beta1.year[year[1]]) * initial_prev[i]
-
+      logit(prev[i,1]) <- beta0.mean[water[i]] + ran.beta0.plot[plot[i]] + beta0.transeffect*trans_reduce[i] + (beta1.mean[water[i]] + ran.beta1.plot[plot[i]] + beta1.transeffect*trans_reduce[i]) * initial_prev[i]
+      #   ran.beta0.year[year[1]] + 
+      # + ran.beta1.year[year[1]]
       for(j in 2:N.years){
-        logit(prev[i,j]) <- beta0.mean[water[i]] + ran.beta0.plot[plot[i]] +       ran.beta0.year[year[j]] + (beta1.mean[water[i]] + ran.beta1.plot[plot[i]] + ran.beta1.year[year[j]]) * prev[i,j-1]
+        logit(prev[i,j]) <- beta0.mean[water[i]] + ran.beta0.plot[plot[i]] +  (beta1.mean[water[i]] + ran.beta1.plot[plot[i]]) * prev[i,j-1]
+      # + ran.beta1.year[year[j]] + 
+      # ran.beta0.year[year[j]] +
       }
     }
 
@@ -282,7 +285,7 @@ Now let's make a nice and tidy data set to feed into the Bayes model. I am worki
 AGHY_subplot_dat <- AGHY.merge%>%
   select(newplot,year_t,subplot,water,transmission,target_init_freq,E_plus_liberal,total)%>% na.omit()%>%arrange(year_t,newplot,subplot)
 
-AGHY_plot_dat <- AGHY_dat%>%group_by(newplot)%>%summarize(water = unique(water),transmission = unique(transmission), initial_prev = unique(target_init_freq))%>%mutate(trans_reduce = ifelse(transmission=="Reduce",1,0))%>%  arrange(newplot)
+AGHY_plot_dat <- AGHY_dat%>%group_by(newplot)%>%summarize(water = as.integer(unique(water)),transmission = unique(transmission), initial_prev = unique(target_init_freq))%>%mutate(trans_reduce = ifelse(transmission=="Reduce",1,0))%>%  arrange(newplot)
 
 ## bundle data
 
@@ -301,7 +304,7 @@ initial_prev<-AGHY_plot_dat$initial_prev
 y.pos<-AGHY_subplot_dat$E_plus_liberal
 N.samples<-AGHY_subplot_dat$total
 plot<-AGHY_subplot_dat$newplot
-year<-AGHY_subplot_dat$year_t
+year<-AGHY_subplot_dat$year_t-2013
 
 ## data for prediction
 x.levels<-seq(0,1,0.01)
@@ -309,7 +312,7 @@ N.x.levels<-length(x.levels)
 
 ```
 
-```{r}
+```{r run model}
 
 jag.data<-list(N.trt=N.trt,
                N.years=N.years,
@@ -331,21 +334,24 @@ inits<-function(){list(beta0.mean=rnorm(N.trt,0,2),
                        beta0.transeffect=rnorm(1,0,2),
                        beta1.transeffect=rnorm(1,0,2),
                        sigma0.plot=runif(1,0,10),
-                       sigma1.plot=runif(1,0,10),
-                       sigma0.year=runif(1,0,10),
-                       sigma1.year=runif(1,0,10))
+                       sigma1.plot=runif(1,0,10)
+                       #sigma0.year=runif(1,0,10),
+                       #sigma1.year=runif(1,0,10)
+                       )
 }
 
 ## Params to estimate
 parameters<-c("beta0.mean","beta1.mean","beta0.transeffect","beta1.transeffect",
-              "sigma0.plot","sigma1.plot","sigma0.year","sigma1.year",
+              "sigma0.plot",
+              "sigma1.plot",
+              #"sigma0.year","sigma1.year",
               "prev","Eplus.add.pred","Eplus.control.pred","fit","fit.new")
 
 
 ## MCMC settings
-ni<-10000
-nb<-2000
-nt<-5
+ni<-25000
+nb<-5000
+nt<-20
 nc<-3
 
 ## run JAGS
@@ -354,7 +360,48 @@ AGHY.endochange.all.years<-jags(data=jag.data,inits=inits,parameters.to.save=par
                                 n.thin=nt,n.chains=nc,n.burnin=nb,
                                 n.iter=ni,working.directory=getwd())
 
-#mcmcplot(AGHY.endochange.out)
+```
+```{r diagnostics}
+mcmcplot(AGHY.endochange.all.years,c("beta0.mean","beta1.mean",                                                   "beta0.transeffect","beta1.transeffect",
+                         "sigma0.plot","sigma1.plot","sigma0.year","sigma1.year"))
+
+plot(AGHY.endochange.all.years$BUGSoutput$sims.list$fit, AGHY.endochange.all.years$BUGSoutput$sims.list$fit.new,
+     xlab="Discrepancy for actual data",
+     ylab="Discrepancy for new data",xlim=c(0,1000),ylim=c(0,1000))
+abline(0,1, col='darkgray',lwd=3)
+```
+
+```{r plot results}
+
+predictions <- tibble(x.prev = rep(x.levels,2),
+       pred_prev = c(AGHY.endochange.all.years$BUGSoutput$mean$Eplus.control.pred,
+                     AGHY.endochange.all.years$BUGSoutput$mean$Eplus.add.pred),
+       water = c(rep("Control",N.x.levels),rep("Add",N.x.levels)))
+
+plot(x.levels,AGHY.endochange.all.years$BUGSoutput$mean$Eplus.control.pred,type="l",
+     xlim=c(0,1),ylim=c(0,1))
+lines(x.levels,AGHY.endochange.all.years$BUGSoutput$mean$Eplus.add.pred,col="blue")
+abline(0,1)
+
+prev_wide%>%
+  mutate(mean_2013 = ifelse(transmission=="Reduce",NA,mean_2013))%>%
+  ggplot()+
+  geom_point(aes(x=mean_2013,y=mean_2014))+
+  geom_point(aes(x=mean_2014,y=mean_2015))+
+  geom_point(aes(x=mean_2015,y=mean_2016))+
+  geom_segment(aes(0,0,xend=1,yend=1))+
+  facet_wrap(~water)+
+  geom_segment(aes(x=mean_2013,y=mean_2014,xend=mean_2014,yend=mean_2015),arrow=arrow(length=unit(0.25,"cm")))+
+  geom_segment(aes(x=mean_2014,y=mean_2015,xend=mean_2015,yend=mean_2016),arrow=arrow(length=unit(0.25,"cm")))+
+  theme_bw()+
+  geom_line(data=predictions,aes(x=x.prev,y=pred_prev))
+
+ggplot()+
+  geom_line(data=predictions,aes(x=x.prev,y=pred_prev))+
+  facet_wrap(~water)+
+  geom_point(data=prev_wide,aes(x=mean_2014,y=mean_2015))+
+  geom_point(data=prev_wide,aes(x=mean_2015,y=mean_2016))+
+  geom_line(data=predictions,aes(x=x.prev,y=x.prev))
 
 ```
 
